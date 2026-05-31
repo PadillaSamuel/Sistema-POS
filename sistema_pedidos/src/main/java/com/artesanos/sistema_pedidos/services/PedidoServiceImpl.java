@@ -12,13 +12,18 @@ import java.util.Iterator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.artesanos.sistema_pedidos.dtos.PagoDto;
+import com.artesanos.sistema_pedidos.dtos.PagoInfoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
+import com.artesanos.sistema_pedidos.dtos.PedidoPagoDto;
 import com.artesanos.sistema_pedidos.dtos.ProductoDetalleDto;
 import com.artesanos.sistema_pedidos.entities.DetallePedido;
+import com.artesanos.sistema_pedidos.entities.Pago;
 import com.artesanos.sistema_pedidos.entities.Pedido;
 import com.artesanos.sistema_pedidos.entities.Producto;
 import com.artesanos.sistema_pedidos.entities.Usuario;
+import com.artesanos.sistema_pedidos.enums.MetodoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPedido;
 import com.artesanos.sistema_pedidos.repositories.PedidoRepository;
@@ -89,7 +94,7 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setDetallesPedido(detallePedidos);
         pedido.setTotalPedido(total);
         pedido.setNombreDomicilio(pedidoDto.getNombreDomicilio());
-        pedido.setEstadoPago(EstadoPago.NO_PAGO);
+        pedido.setEstadoPago(EstadoPago.PENDIENTE);
         pedido.setNumeroCliente(pedidoDto.getNumeroCliente());
 
         return Optional.of(pedidoRepository.save(pedido));
@@ -140,7 +145,7 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
             String nombreProductoExistente = detalleExistente.getProducto().getNombreProducto();
 
             Optional<ProductoDetalleDto> dtoMatch = dtosEntrantes.stream()
-                    .filter(dto -> dto.getNombreProducto().equals(nombreProductoExistente))
+                    .filter(dto -> dto.getNombreProducto().equalsIgnoreCase(nombreProductoExistente))
                     .findFirst();
 
             if (dtoMatch.isPresent()) {
@@ -190,20 +195,116 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
     });
 }
     @Override
+    @Transactional(readOnly = true)
     public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedido(LocalDateTime inicio, LocalDateTime fin) {
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
+        }
+        if (inicio.isAfter(fin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
+        }
         return pedidoRepository.findByFechaPedidoBetweenAndEstadoPedido(inicio, fin, EstadoPedido.RESUELTO);
     }
+
     @Override
+    @Transactional(readOnly = true)
     public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedidoAnulado(LocalDateTime inicio, LocalDateTime fin) {
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
+        }
+        if (inicio.isAfter(fin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
+        }
         return pedidoRepository.findByFechaPedidoBetweenAndEstadoPedido(inicio, fin, EstadoPedido.CANCELADO);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PedidoDto> findEstadoPedidoResuelto() {
-        return pedidoRepository.findEstadoPedidoResuelto(EstadoPedido.RESUELTO);
+        return pedidoRepository.findByEstadoPedido(EstadoPedido.RESUELTO);
     }
+
     @Override
+    @Transactional(readOnly = true)
     public List<PedidoDto> findEstadoPedidoAnulado() {
-        return pedidoRepository.findEstadoPedidoResuelto(EstadoPedido.CANCELADO);
+        return pedidoRepository.findByEstadoPedido(EstadoPedido.CANCELADO);
+    }
+
+
+    public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos) {
+        return pedidoRepository.findById(idPedido).map(pedido -> {
+
+            if (pagosRecibidos == null || pagosRecibidos.isEmpty()) {
+                throw new IllegalArgumentException("Debe enviar al menos un método de pago");
+            }
+
+            if (pedido.getTotalPedido() == null || pedido.getTotalPedido() <= 0) {
+                throw new IllegalArgumentException("El pedido no tiene un total válido para procesar pagos");
+            }
+
+            Integer sumaPagos = 0;
+
+            pedido.getPagos().clear();
+
+            for (PagoDto dto : pagosRecibidos) {
+                MetodoPago metodo = MetodoPago.fromString(dto.getMetodoPago());
+
+                if (dto.getMonto() == null || dto.getMonto() <= 0) {
+                    throw new IllegalArgumentException("El monto debe ser un valor positivo");
+                }
+
+                Pago nuevoPago = new Pago();
+                nuevoPago.setMetodoPago(metodo);
+                nuevoPago.setMonto(dto.getMonto());
+                pedido.addPago(nuevoPago);
+                sumaPagos += dto.getMonto();
+            }
+
+            if (!sumaPagos.equals(pedido.getTotalPedido())) {
+                throw new IllegalArgumentException(
+                        "El monto total de los pagos ($" + sumaPagos +
+                                ") no coincide con el total del pedido ($" + pedido.getTotalPedido() + ")"
+                );
+            }
+
+            pedido.setEstadoPedido(EstadoPedido.RESUELTO);
+            pedido.setEstadoPago(EstadoPago.PAGADO);
+
+            return pedidoRepository.save(pedido);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PedidoPagoDto> findPedidosConPagosByFecha(LocalDateTime inicio, LocalDateTime fin, String estado) {
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
+        }
+        if (inicio.isAfter(fin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
+        }
+
+        EstadoPedido estadoPedido = estado.equalsIgnoreCase("CANCELADO")
+                ? EstadoPedido.CANCELADO
+                : EstadoPedido.RESUELTO;
+
+        List<Pedido> pedidos = pedidoRepository.findByFechaPedidoBetweenWithPagos(inicio, fin, estadoPedido);
+
+        return pedidos.stream().map(pedido -> {
+            List<PagoInfoDto> pagosDto = pedido.getPagos().stream()
+                    .map(pago -> new PagoInfoDto(pago.getMetodoPago().name(), pago.getMonto()))
+                    .toList();
+
+            PedidoPagoDto dto = new PedidoPagoDto(
+                    pedido.getId(),
+                    pedido.getTotalPedido(),
+                    pedido.getNumeroMesa(),
+                    pedido.getNombreDomicilio(),
+                    pedido.getEstadoPago(),
+                    pedido.getNumeroCliente()
+            );
+            dto.setPagos(pagosDto);
+            return dto;
+        }).toList();
     }
 }

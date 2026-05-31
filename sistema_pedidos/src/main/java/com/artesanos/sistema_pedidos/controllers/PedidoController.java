@@ -3,8 +3,10 @@ package com.artesanos.sistema_pedidos.controllers;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.artesanos.sistema_pedidos.dtos.PagoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
+import com.artesanos.sistema_pedidos.dtos.PedidoPagoDto;
 import com.artesanos.sistema_pedidos.dtos.ProductoDto;
 import com.artesanos.sistema_pedidos.entities.Pedido;
 import com.artesanos.sistema_pedidos.services.PedidoService;
@@ -23,6 +25,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +65,7 @@ public class PedidoController {
     @Operation(summary = "Crear pedidos")
     @PostMapping("/crear/{nombreUsuario}")
     @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
-    public ResponseEntity<?> postPedido(@RequestBody PedidoDto pedidoDto, @PathVariable String nombreUsuario) {
+    public ResponseEntity<?> postPedido(@Valid @RequestBody PedidoDto pedidoDto, @PathVariable String nombreUsuario) {
         Optional<Pedido> pedido = pedidoService.save(pedidoDto, nombreUsuario);
         PedidoDto response = null;
         if (pedido.isPresent()) {
@@ -82,7 +85,7 @@ public class PedidoController {
     @Operation(summary = "Crear pedido domicilio")
     @PostMapping("/crear/domicilio/{nombreUsuario}")
     @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
-    public ResponseEntity<?> postPedidoDomicilio(@RequestBody PedidoDto pedidoDto, @PathVariable String nombreUsuario) {
+    public ResponseEntity<?> postPedidoDomicilio(@Valid @RequestBody PedidoDto pedidoDto, @PathVariable String nombreUsuario) {
         Optional<Pedido> pedido = pedidoService.save(pedidoDto, nombreUsuario);
         PedidoDto response = null;
         if (pedido.isPresent()) {
@@ -103,7 +106,7 @@ public class PedidoController {
     @Operation(summary = "Actualizar pedido por id")
     @PutMapping("/actualizar/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
-    public ResponseEntity<?> putPedido(@PathVariable Integer id, @RequestBody PedidoBodyDto pedidoDto) {
+    public ResponseEntity<?> putPedido(@PathVariable Integer id, @Valid @RequestBody PedidoBodyDto pedidoDto) {
         if (pedidoService.actualizarPedido(id, pedidoDto).isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No existe pedido con ese id");
         }
@@ -144,6 +147,27 @@ public class PedidoController {
         }
         return ResponseEntity.ok(pedidos);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Pedidos con pagos obtenidos")
+    })
+    @Operation(summary = "Buscar pedidos resueltos con información de pagos para cierre de caja")
+    @GetMapping("/resueltos/cierre/pagos/{inicio}/{fin}")
+    @PreAuthorize("hasAuthority('ROLE_CAJA')")
+    public ResponseEntity<List<PedidoPagoDto>> getPedidosConPagosPorFecha(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+
+        LocalDateTime fechaInicio = inicio.atStartOfDay();
+        LocalDateTime fechaFin = fin.atTime(LocalTime.MAX);
+        List<PedidoPagoDto> pedidos = pedidoService.findPedidosConPagosByFecha(fechaInicio, fechaFin, "RESUELTO");
+        if (pedidos.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(pedidos);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
             @ApiResponse(responseCode = "200", description = "Pedidos Anulados obtenidos")
@@ -155,8 +179,8 @@ public class PedidoController {
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
 
-        LocalDateTime fechaInicio = inicio.atStartOfDay(); 
-        LocalDateTime fechaFin = fin.atTime(LocalTime.MAX); 
+        LocalDateTime fechaInicio = inicio.atStartOfDay();
+        LocalDateTime fechaFin = fin.atTime(LocalTime.MAX);
         List<PedidoDto> pedidos = pedidoService.findByFechaPedidoBetweenAndEstadoPedidoAnulado(fechaInicio, fechaFin);
         if (pedidos.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -178,11 +202,12 @@ public class PedidoController {
         }
         return ResponseEntity.ok(pedidos);
     }
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
             @ApiResponse(responseCode = "200", description = "Pedidos Cancelados obtenidos")
     })
-    @Operation(summary = "Buscar los pedidos Pagados")
+    @Operation(summary = "Buscar los pedidos Anulados")
     @GetMapping("/anulados")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
     public ResponseEntity<List<PedidoDto>> getPedidosAnulados() {
@@ -191,5 +216,23 @@ public class PedidoController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(pedidos);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "El monto no cubre el total", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Pedido no encontrado", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Pedido pagado exitosamente")
+    })
+    @Operation(summary = "Pagar un pedido con múltiples métodos de pago")
+    @PutMapping("/pagar/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
+    public ResponseEntity<?> pagarPedido(@PathVariable Integer id, @Valid @RequestBody List<PagoDto> pagos) {
+        try {
+            return pedidoService.procesarPagos(id, pagos)
+                    .map(p -> ResponseEntity.ok().body("Pedido pagado correctamente"))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

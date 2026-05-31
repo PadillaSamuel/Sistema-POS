@@ -1,15 +1,17 @@
 package com.artesanos.sistema_pedidos.enums;
 
 public enum EstadoPago {
-    NO_PAGO, EFECTIVO, TRANSFERENCIA, DATAFONO;
+    PENDIENTE, PAGADO, ANULADO;
 
     public static EstadoPago fromString(String estado) {
+        if (estado == null || estado.isBlank()) {
+            throw new IllegalArgumentException("El estado de pago no puede ser nulo o vacío");
+        }
         for (EstadoPago e : EstadoPago.values()) {
-            if (e.name().equals(estado)) {
+            if (e.name().equalsIgnoreCase(estado.trim())) {
                 return e;
             }
         }
-
-        return NO_PAGO;
+        throw new IllegalArgumentException("Estado de pago inválido: " + estado);
     }
 }

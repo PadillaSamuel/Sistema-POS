@@ -3,6 +3,8 @@ package com.artesanos.sistema_pedidos.controllers;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping(path = "/api/impresora")
 @Tag(name = "Impresora", description = "Envia informacion para imprimir")
 public class ImpresoraController {
+    private static final Logger log = LoggerFactory.getLogger(ImpresoraController.class);
     private final networkPrinterService networkPrinterService;
     private final DetallePedidoService detallePedidoService;
 
@@ -42,9 +45,12 @@ public class ImpresoraController {
     @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
     @PostMapping("/factura")
     public ResponseEntity<?> imprimirFactura(@RequestBody FacturaDto payload) {
+        log.info("[FACTURA] Solicitud de impresion recibida - PedidoID: {}, IP: {}", payload.getIdPedido(), payload.getImpresoraIp());
         try {
 
             String printerIp = payload.getImpresoraIp();
+
+            log.debug("[FACTURA] IP validada y aceptada: {}", printerIp);
 
             Map<String, Object> data = new HashMap<>();
             data.put("id", payload.getIdPedido());
@@ -78,8 +84,11 @@ public class ImpresoraController {
     @PreAuthorize("hasAnyAuthority('ROLE_CAJA', 'ROLE_MESERA')")
     @PostMapping("/comanda")
     public ResponseEntity<?> imprimirComanda(@RequestBody ComandaDto payload) {
+        log.info("[COMANDA] Solicitud de impresion recibida - PedidoID: {}, IP: {}", payload.getIdPedido(), payload.getImpresoraIp());
         try {
             String printerIp = payload.getImpresoraIp();
+
+            log.debug("[COMANDA] IP validada y aceptada: {}", printerIp);
 
             Map<String, Object> data = new HashMap<>();
             data.put("id", payload.getIdPedido());

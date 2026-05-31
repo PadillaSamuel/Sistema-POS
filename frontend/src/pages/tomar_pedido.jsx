@@ -73,7 +73,7 @@ const TomarPedido = () => {
     }
 
     const anularPedido = async () => {
-        return apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/NO_PAGO`, {
+        return apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/ANULADO`, {
             metodo: "PUT"
         })
     }
@@ -201,7 +201,7 @@ const TomarPedido = () => {
                     )
                     ),
                     nombreDomicilio: nombreDomicilio,
-                    estadoPago: "NO_PAGO",
+                    estadoPago: "PENDIENTE",
                     numeroCliente: celCliente
                 }
 
@@ -215,7 +215,7 @@ const TomarPedido = () => {
                 await actualizarPedido()
                 imprimirComanda({
                     idPedido: id,
-                    impresoraIp: "192.168.1.200",
+                    impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || "192.168.1.200",
                     numeroMesa: mesaPedido,
                     nombreDomicilio: nombreDomicilio,
                     productos: pedido.map(p => ({
@@ -244,7 +244,7 @@ const TomarPedido = () => {
 
                     imprimirComanda({
                         idPedido: res_id.id,
-                        impresoraIp: "192.168.1.200",
+                        impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || "192.168.1.200",
                         numeroMesa: mesaPedido,
                         nombreDomicilio: nombreDomicilio,
                         productos: pedidoImprimir

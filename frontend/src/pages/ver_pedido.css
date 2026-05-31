@@ -146,3 +146,127 @@
         display: block;
     }
 }
+
+.modal-pago-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: grid;
+    place-items: center;
+    z-index: 1000;
+}
+
+.modal-pago {
+    background-color: #F3F0F0;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    padding: 20px;
+    width: 400px;
+    max-width: 90%;
+}
+
+.modal-pago-titulo {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-pago-campos {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal-pago-campo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.modal-pago-campo label {
+    font-weight: 600;
+    color: #444;
+}
+
+.modal-pago-campo input {
+    width: 150px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    text-align: right;
+    font-size: 1rem;
+}
+
+.modal-pago-campo input:focus {
+    outline: none;
+    border-color: #047C1A;
+}
+
+.modal-pago-total {
+    text-align: center;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.modal-pago-suma {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.modal-pago-suma.ok {
+    color: #047C1A;
+}
+
+.modal-pago-diferencia {
+    color: #d32f2f;
+    font-size: 0.9rem;
+}
+
+.modal-pago-botones {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.modal-pago-btn-cancelar,
+.modal-pago-btn-confirmar {
+    flex: 1;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.modal-pago-btn-cancelar {
+    background-color: #ccc;
+    color: #333;
+}
+
+.modal-pago-btn-cancelar:hover {
+    background-color: #bbb;
+}
+
+.modal-pago-btn-confirmar {
+    background-color: #047C1A;
+    color: #fff;
+}
+
+.modal-pago-btn-confirmar:hover {
+    background-color: #01590A;
+}

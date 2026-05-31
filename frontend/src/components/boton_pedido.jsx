@@ -8,7 +8,7 @@ const BotonPedido = ({ num_pedido, num_mesa, total, ruta, nombreDomi }) => {
             <div className='boton_pedido_cont' onClick={() => { navigate(ruta) }}>
                 <div>
                     {
-                        nombreDomi != undefined ? (
+                        nombreDomi ? (
                             <>
                                 <h3>Pedido {num_pedido}</h3>
                                 <h3>{nombreDomi}</h3>

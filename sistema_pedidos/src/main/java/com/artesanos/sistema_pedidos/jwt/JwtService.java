@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 
 public class JwtService {
-    private final static String SECRET_KEY = "586E3272357538782F413F4428472B4B6250655368566B597033733676397924";
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
+
+    @Value("${jwt.expiration-ms:72000000}")
+    private long TOKEN_EXPIRATION_MS;
 
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
@@ -37,7 +42,7 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(user.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 20))
+                .expiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION_MS))
                 .signWith(getKey(), SignatureAlgorithm.HS256).compact();
     }
 

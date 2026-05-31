@@ -56,37 +56,24 @@ const Pedidos = () => {
                     <h2>Pedidos</h2>
                 </div>
 
-                <div className='scroll_pedidos'>
-                    {pedido != null ? (
+<div className='scroll_pedidos'>
+                    {pedido != null && pedido.length > 0 ? (
                         pedido.map(p => (
                             domis != undefined ? (
-                                p.numeroMesa === 0 ? (
-                                    <BotonPedido key={p.id} ruta={`/tomar-pedido/domi/${p.id}/${p.nombreDomicilio}`} nombreDomi={p.nombreDomicilio} num_pedido={p.id} />
-                                ) : (
-                                    <></>
+                                p.numeroMesa === 0 && (
+                                    <BotonPedido key={p.id} ruta={`/tomar-pedido/domi/${p.id}/${p.nombreDomicilio || 'domicilio'}`} nombreDomi={p.nombreDomicilio || 'domicilio'} num_pedido={p.id} />
                                 )
                             ) : (
                                 p.numeroMesa === 0 ? (
-                                    <BotonPedido key={p.id} ruta={`/ver-pedido/domi/${p.id}/${p.nombreDomicilio}`} nombreDomi={p.nombreDomicilio} num_pedido={p.id} />
+                                    <BotonPedido key={p.id} ruta={`/ver-pedido/domi/${p.id}/${p.nombreDomicilio || 'domicilio'}`} nombreDomi={p.nombreDomicilio || 'domicilio'} num_pedido={p.id} />
                                 ) : (
                                     <BotonPedido key={p.id} ruta={`/ver-pedido/${p.id}/${p.numeroMesa}`} num_mesa={p.numeroMesa} num_pedido={p.id} />
                                 )
                             )
-
-
-
-
-
-
-
-
-
                         ))
                     ) : (
                         <p>No hay pedidos en curso</p>
                     )
-
-
                     }
 
 
