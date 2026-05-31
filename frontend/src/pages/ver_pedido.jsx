@@ -5,6 +5,7 @@ import { apiRequest } from '../services/api';
 import { useEffect, useRef, useState } from 'react';
 import { formateador } from './ver_ventas';
 import { useReactToPrint } from "react-to-print";
+import { toast } from 'react-toastify';
 
 
 const VerPedido = ({ n_pedido, n_mesa }) => {
@@ -12,13 +13,15 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
     const [cantidad, setCantidad] = useState(0)
     const { id, mesa, estado, domi } = useParams();
     const [total, setTotal] = useState(0)
-    const [alternar, setAlternar] = useState(false);
     const comandaRef = useRef();
-    const botonref = useRef(null)
-    const [pos, setPos] = useState(null)
     const navigate = useNavigate();
-    const timer = useRef(null);
     const [celular, setCelular] = useState(null)
+    const [showModalPago, setShowModalPago] = useState(false)
+    const [pagoMetodos, setPagoMetodos] = useState({
+        EFECTIVO: '',
+        TRANSFERENCIA: '',
+        DATAFONO: ''
+    })
 
     const pedidoPorId = async () => {
         return apiRequest(`/api/detallePedido/${id}`, {
@@ -37,15 +40,16 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
         })
     }
 
-    const confirmarPedido = async (tipoPago) => {
-        return apiRequest(`/api/pedidos/actualizar/${id}/RESUELTO/${tipoPago}`, {
+    const anularPedido = async () => {
+        return apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/ANULADO`, {
             metodo: "PUT"
         })
     }
 
-    const anularPedido = async () => {
-        return apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/NO_PAGO`, {
-            metodo: "PUT"
+    const procesarPagos = async (pagos) => {
+        return apiRequest(`/api/pedidos/pagar/${id}`, {
+            metodo: 'PUT',
+            body: pagos
         })
     }
 
@@ -54,10 +58,6 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
         navigate("/pedidos");
     }
 
-    const resolverPedido = async (tipoPago) => {
-        const tmp = await confirmarPedido(tipoPago)
-        navigate("/pedidos");
-    }
     useEffect(() => {
         const traerPedido = async () => {
             const tmp = await pedidoPorId()
@@ -124,8 +124,61 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
         })
     }
 
+    const calcularSumaPagos = () => {
+        const valores = Object.values(pagoMetodos).map(v => parseInt(v) || 0)
+        return valores.reduce((sum, val) => sum + val, 0)
+    }
 
+    const validarYEnviarPagos = async () => {
+        const sumaPagos = calcularSumaPagos()
 
+        if (sumaPagos === 0) {
+            toast.error("Debe ingresar al menos un método de pago");
+            return;
+        }
+
+        if (sumaPagos !== total) {
+            toast.error(`La suma de los pagos (${formateador.format(sumaPagos)}) no coincide con el total del pedido (${formateador.format(total)})`);
+            return;
+        }
+
+        const pagos = []
+        if (pagoMetodos.EFECTIVO && parseInt(pagoMetodos.EFECTIVO) > 0) {
+            pagos.push({ metodoPago: "EFECTIVO", monto: parseInt(pagoMetodos.EFECTIVO) })
+        }
+        if (pagoMetodos.TRANSFERENCIA && parseInt(pagoMetodos.TRANSFERENCIA) > 0) {
+            pagos.push({ metodoPago: "TRANSFERENCIA", monto: parseInt(pagoMetodos.TRANSFERENCIA) })
+        }
+        if (pagoMetodos.DATAFONO && parseInt(pagoMetodos.DATAFONO) > 0) {
+            pagos.push({ metodoPago: "DATAFONO", monto: parseInt(pagoMetodos.DATAFONO) })
+        }
+
+        try {
+            await procesarPagos(pagos)
+            toast.success("Pago procesado correctamente");
+            setShowModalPago(false)
+            navigate("/pedidos");
+        } catch (error) {
+            toast.error(`Error al procesar pago: ${error.message}`);
+        }
+    }
+
+    const handlePagoMetodoChange = (metodo, value) => {
+        const numericValue = value.replace(/\D/g, '')
+        setPagoMetodos(prev => ({
+            ...prev,
+            [metodo]: numericValue
+        }))
+    }
+
+    const abrirModalPago = () => {
+        setPagoMetodos({ EFECTIVO: '', TRANSFERENCIA: '', DATAFONO: '' })
+        setShowModalPago(true)
+    }
+
+    const cerrarModalPago = () => {
+        setShowModalPago(false)
+    }
 
     return (
         <>
@@ -171,8 +224,6 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
                 <div className='fila-pedido-div-tres'>
                     {estado != undefined ? (
                         <>
-
-
                             <div>
                                 <button className='fila-boton-dos' onClick={impresionFac}>Imprimir Comanda</button>
                             </div>
@@ -184,20 +235,7 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
                                 <button className='fila-boton-uno' onClick={cancelarPedido}>Anular Pedido</button>
                             </div>
                             <div>
-                                <button ref={botonref} className='fila-boton-dos' onClick={() => {
-                                    setPos({
-                                        top: botonref.current.getBoundingClientRect().bottom + window.scrollY,
-                                        left: botonref.current.getBoundingClientRect().left + window.scrollX + 6
-                                    })
-                                }
-                                }
-                                    onMouseLeave={() => {
-                                        timer.current = setTimeout(() => {
-                                            if (alternar == false) {
-                                                setPos(null);
-                                            }
-                                        }, 2000);
-                                    }}>Confirmar Pago</button>
+                                <button className='fila-boton-dos' onClick={abrirModalPago}>Confirmar Pago</button>
                             </div>
                             <div>
                                 <button className='fila-boton-dos' onClick={impresionFac}>Imprimir Comanda</button>
@@ -205,38 +243,72 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
                         </>
                     )
                     }
-                    {pos != null ?
-                        (
-                            <div className='boton-opciones'
-                                style={{
-                                    position: 'absolute',
-                                    top: pos.top,
-                                    left: pos.left,
-
-                                }}
-                                onMouseLeave={() => {
-                                    setPos(null)
-                                    setAlternar(false)
-                                    clearTimeout(timer.current)
-                                }}
-                                onMouseEnter={() => {
-                                    setAlternar(true)
-                                    clearTimeout(timer.current)
-                                }}
-                            >
-                                <div className='opcion-menu' onClick={() => resolverPedido("TRANSFERENCIA")}>Pago transferencia</div>
-                                <div className='opcion-menu' onClick={() => resolverPedido("EFECTIVO")}>Pago en efectivo</div>
-                                <div className='opcion-menu' onClick={() => resolverPedido("DATAFONO")}>Pago con tarjeta</div>
-                            </div>
-
-                        ) : (
-                            <></>
-                        )
-
-                    }
 
                 </div>
             </section>
+
+            {showModalPago && (
+                <div className='modal-pago-overlay' onClick={(e) => {
+                    if (e.target.className === 'modal-pago-overlay') cerrarModalPago()
+                }}>
+                    <div className='modal-pago'>
+                        <h2 className='modal-pago-titulo'>Confirmar Pago</h2>
+
+                        <div className='modal-pago-campos'>
+                            <div className='modal-pago-campo'>
+                                <label>EFECTIVO</label>
+                                <input
+                                    type='text'
+                                    inputMode='numeric'
+                                    placeholder='0'
+                                    value={pagoMetodos.EFECTIVO}
+                                    onChange={(e) => handlePagoMetodoChange('EFECTIVO', e.target.value)}
+                                />
+                            </div>
+
+                            <div className='modal-pago-campo'>
+                                <label>TRANSFERENCIA</label>
+                                <input
+                                    type='text'
+                                    inputMode='numeric'
+                                    placeholder='0'
+                                    value={pagoMetodos.TRANSFERENCIA}
+                                    onChange={(e) => handlePagoMetodoChange('TRANSFERENCIA', e.target.value)}
+                                />
+                            </div>
+
+                            <div className='modal-pago-campo'>
+                                <label>DATAFONO</label>
+                                <input
+                                    type='text'
+                                    inputMode='numeric'
+                                    placeholder='0'
+                                    value={pagoMetodos.DATAFONO}
+                                    onChange={(e) => handlePagoMetodoChange('DATAFONO', e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className='modal-pago-total'>
+                            <span>Total: {formateador.format(total)}</span>
+                        </div>
+
+                        <div className={`modal-pago-suma ${calcularSumaPagos() === total ? 'ok' : ''}`}>
+                            <span>Pago: {formateador.format(calcularSumaPagos())}</span>
+                            {calcularSumaPagos() !== total && calcularSumaPagos() > 0 && (
+                                <span className='modal-pago-diferencia'>
+                                    {calcularSumaPagos() > total ? 'Exceso' : 'Faltante'}: {formateador.format(Math.abs(total - calcularSumaPagos()))}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className='modal-pago-botones'>
+                            <button className='modal-pago-btn-cancelar' onClick={cerrarModalPago}>Cancelar</button>
+                            <button className='modal-pago-btn-confirmar' onClick={validarYEnviarPagos}>Confirmar Pago</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.artesanos.sistema_pedidos.dtos.PagoDto;
+import com.artesanos.sistema_pedidos.dtos.PagoInfoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
+import com.artesanos.sistema_pedidos.dtos.PedidoPagoDto;
 import com.artesanos.sistema_pedidos.dtos.ProductoDetalleDto;
 import com.artesanos.sistema_pedidos.entities.DetallePedido;
 import com.artesanos.sistema_pedidos.entities.Pago;
@@ -270,5 +272,39 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
 
             return pedidoRepository.save(pedido);
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PedidoPagoDto> findPedidosConPagosByFecha(LocalDateTime inicio, LocalDateTime fin, String estado) {
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
+        }
+        if (inicio.isAfter(fin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
+        }
+
+        EstadoPedido estadoPedido = estado.equalsIgnoreCase("CANCELADO")
+                ? EstadoPedido.CANCELADO
+                : EstadoPedido.RESUELTO;
+
+        List<Pedido> pedidos = pedidoRepository.findByFechaPedidoBetweenWithPagos(inicio, fin, estadoPedido);
+
+        return pedidos.stream().map(pedido -> {
+            List<PagoInfoDto> pagosDto = pedido.getPagos().stream()
+                    .map(pago -> new PagoInfoDto(pago.getMetodoPago().name(), pago.getMonto()))
+                    .toList();
+
+            PedidoPagoDto dto = new PedidoPagoDto(
+                    pedido.getId(),
+                    pedido.getTotalPedido(),
+                    pedido.getNumeroMesa(),
+                    pedido.getNombreDomicilio(),
+                    pedido.getEstadoPago(),
+                    pedido.getNumeroCliente()
+            );
+            dto.setPagos(pagosDto);
+            return dto;
+        }).toList();
     }
 }

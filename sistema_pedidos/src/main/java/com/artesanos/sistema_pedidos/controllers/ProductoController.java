@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -93,7 +94,8 @@ public class ProductoController {
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
     public ResponseEntity<?> postProducto(@Valid @RequestBody ProductoDto productoDto) {
         if (productoService.save(productoDto).isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El producto ya existe, actualizalo desde la sección de búsqueda");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("El producto ya existe, actualizalo desde la sección de búsqueda");
         }
         return ResponseEntity.ok().build();
     }
@@ -105,11 +107,19 @@ public class ProductoController {
     @Operation(summary = "Actualizar producto por id")
     @PutMapping("/actualizar/{id}")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
+    public ResponseEntity<?> putProducto(@PathVariable Integer id, @Valid @RequestBody ProductoDto productoDto) {
+        try {
+            Optional<Producto> productoActualizado = productoService.actualizarProducto(id, productoDto);
 
-    public ResponseEntity<?> postProducto(@PathVariable Integer id, @Valid @RequestBody ProductoDto productoDto) {
-        if (productoService.actualizarProducto(id, productoDto).isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No es posible actualizar a un producto ya existente");
+            if (productoActualizado.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("El producto con el ID especificado no existe.");
+            }
+
+            return ResponseEntity.ok(productoActualizado.get());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        return ResponseEntity.ok().build();
     }
 }

@@ -15,6 +15,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer>, Jp
     public Optional<Producto> findByNombreProducto(String nombreProducto);
 
     public List<Producto> findByActivoTrue();
-
+    boolean existsByNombreProductoAndIdNot(String nombreProducto, Integer id);
     // public List<Producto> findByNombreProductoContainingIgnoreCaseAndActivoTrue(String nombreProducto);
 }

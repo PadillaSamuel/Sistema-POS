@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.artesanos.sistema_pedidos.dtos.PagoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
+import com.artesanos.sistema_pedidos.dtos.PedidoPagoDto;
 import com.artesanos.sistema_pedidos.dtos.ProductoDto;
 import com.artesanos.sistema_pedidos.entities.Pedido;
 import com.artesanos.sistema_pedidos.services.PedidoService;
@@ -141,6 +142,26 @@ public class PedidoController {
         LocalDateTime fechaInicio = inicio.atStartOfDay(); // 2026-02-13 00:00:00
         LocalDateTime fechaFin = fin.atTime(LocalTime.MAX); // 2026-02-13 23:59:59.99999
         List<PedidoDto> pedidos = pedidoService.findByFechaPedidoBetweenAndEstadoPedido(fechaInicio, fechaFin);
+        if (pedidos.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(pedidos);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Pedidos con pagos obtenidos")
+    })
+    @Operation(summary = "Buscar pedidos resueltos con información de pagos para cierre de caja")
+    @GetMapping("/resueltos/cierre/pagos/{inicio}/{fin}")
+    @PreAuthorize("hasAuthority('ROLE_CAJA')")
+    public ResponseEntity<List<PedidoPagoDto>> getPedidosConPagosPorFecha(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+
+        LocalDateTime fechaInicio = inicio.atStartOfDay();
+        LocalDateTime fechaFin = fin.atTime(LocalTime.MAX);
+        List<PedidoPagoDto> pedidos = pedidoService.findPedidosConPagosByFecha(fechaInicio, fechaFin, "RESUELTO");
         if (pedidos.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

@@ -51,14 +51,11 @@ const PedidoMesera = () => {
                 <div className='pedido-mesera-pedidos'>
                     <h3 className='title-pedido'>Pedidos</h3>
                     <div>
-                        {pedidos != null ? (
+                        {pedidos != null && pedidos.length > 0 ? (
                             pedidos.map(p => (
-                                p.numeroMesa === 0 ? (
-                                    <></>
-                                ) : (
+                                p.numeroMesa !== 0 && (
                                     <BotonPedido key={p.id} num_mesa={p.numeroMesa} num_pedido={p.id} ruta={`/tomar-pedido/${p.id}/${p.numeroMesa}`} />
                                 )
-
                             ))
                         ) : (
                             <p>No hay pedidos en curso</p>

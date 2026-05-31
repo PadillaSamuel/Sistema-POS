@@ -14,7 +14,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class PedidoBodyDto {
-    @Min(value = 1, message = "El número de mesa debe ser mayor a 0")
+    @Min(value = 0, message = "El número de mesa debe ser 0 o mayor")
     Integer numeroMesa;
 
     @NotEmpty(message = "La lista de productos no puede estar vacía")

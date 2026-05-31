@@ -1,6 +1,5 @@
 package com.artesanos.sistema_pedidos.entities;
 
-import com.artesanos.sistema_pedidos.enums.EstadoPago;
 import com.artesanos.sistema_pedidos.enums.MetodoPago;
 
 import jakarta.persistence.*;

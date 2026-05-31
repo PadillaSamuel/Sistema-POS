@@ -56,4 +56,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
                    ) from Pedido p where p.estadoPedido = ?1
             """)
     List<PedidoDto> findByEstadoPedido(EstadoPedido estadoPedido);
+
+    @Query("""
+            select p from Pedido p
+            left join fetch p.pagos
+            where p.fechaPedido between ?1 and ?2 and p.estadoPedido = ?3
+            """)
+    List<Pedido> findByFechaPedidoBetweenWithPagos(LocalDateTime inicio, LocalDateTime fin, EstadoPedido estadoPedido);
 }

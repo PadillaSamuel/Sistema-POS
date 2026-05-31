@@ -77,20 +77,25 @@ public class ProductoServiceImpl implements ProductoService {
         return Optional.of(productoGuardado);
     }
 
-    @SuppressWarnings("null")
     @Transactional
     @Override
-    public Optional<Producto> actualizarProducto(Integer id, ProductoDto producto) {
-        if (productoRepository.findByNombreProducto(producto.getNombreProducto()).isPresent()) {
-            return Optional.empty();
+    public Optional<Producto> actualizarProducto(Integer id, ProductoDto productoDto) {
+        Optional<Producto> productoActual = productoRepository.findById(id);
+        if (productoActual.isEmpty()) {
+            return Optional.empty(); 
         }
-        return productoRepository.findById(id).map(prodOptional -> {
-            prodOptional.setActivo(producto.isActivo());
-            prodOptional.setNombreProducto(producto.getNombreProducto().toLowerCase());
-            prodOptional.setCombinable(producto.isCombinable());
-            prodOptional.setPrecio(producto.getPrecioProducto());
-            return productoRepository.save(prodOptional);
-        });
+
+        String nuevoNombre = productoDto.getNombreProducto().toLowerCase();
+        if (productoRepository.existsByNombreProductoAndIdNot(nuevoNombre, id)) {
+            throw new IllegalArgumentException("El nombre del producto ya está en uso por otro registro.");
+        }
+        Producto prod = productoActual.get();
+        prod.setActivo(productoDto.isActivo());
+        prod.setNombreProducto(nuevoNombre);
+        prod.setCombinable(productoDto.isCombinable());
+        prod.setPrecio(productoDto.getPrecioProducto());
+
+        return Optional.of(productoRepository.save(prod));
     }
 
     @Transactional(readOnly = true)
@@ -110,7 +115,7 @@ public class ProductoServiceImpl implements ProductoService {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-        
+
         return productoRepository.findAll(spec);
     }
 
