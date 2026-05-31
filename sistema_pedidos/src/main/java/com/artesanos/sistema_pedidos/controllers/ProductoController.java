@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -90,7 +91,7 @@ public class ProductoController {
     @Operation(summary = "Crear producto")
     @PostMapping("/crear")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
-    public ResponseEntity<?> postProducto(@RequestBody ProductoDto productoDto) {
+    public ResponseEntity<?> postProducto(@Valid @RequestBody ProductoDto productoDto) {
         if (productoService.save(productoDto).isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El producto ya existe, actualizalo desde la sección de búsqueda");
         }
@@ -105,7 +106,7 @@ public class ProductoController {
     @PutMapping("/actualizar/{id}")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
 
-    public ResponseEntity<?> postProducto(@PathVariable Integer id, @RequestBody ProductoDto productoDto) {
+    public ResponseEntity<?> postProducto(@PathVariable Integer id, @Valid @RequestBody ProductoDto productoDto) {
         if (productoService.actualizarProducto(id, productoDto).isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No es posible actualizar a un producto ya existente");
         }

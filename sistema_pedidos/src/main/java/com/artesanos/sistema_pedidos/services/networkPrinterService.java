@@ -7,6 +7,8 @@ import com.github.anastaciocintra.escpos.EscPosConst;
 import com.github.anastaciocintra.escpos.Style;
 import com.github.anastaciocintra.escpos.image.*;
 import com.github.anastaciocintra.output.TcpIpOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import java.util.Objects;
 @Service
 public class networkPrinterService {
 
+    private static final Logger log = LoggerFactory.getLogger(networkPrinterService.class);
     private final ResourceLoader resourceLoader;
 
     private static final int PRINTER_CHAR_WIDTH = 48;
@@ -43,9 +46,11 @@ public class networkPrinterService {
     }
 
     public void imprimirFactura(Map<String, Object> data, String ipImpresora) throws IOException {
+        log.info("[IMPRIMIR_FACTURA] Iniciando trabajo - IP: {}, PedidoID: {}", ipImpresora, data.get("id"));
         try (TcpIpOutputStream outputStream = new TcpIpOutputStream(ipImpresora, 9100);
                 EscPos escpos = new EscPos(outputStream)) {
 
+            log.debug("[IMPRIMIR_FACTURA] Conexion TCP abierta exitosamente a {}", ipImpresora);
             printLogo(escpos);
 
             escpos.writeLF(boldCenter, "Pedido #" + data.getOrDefault("id", ""));
@@ -84,14 +89,17 @@ public class networkPrinterService {
             String totalFormat = padLeft("TOTAL: $" + totalFormateado, PRINTER_CHAR_WIDTH);
             escpos.writeLF(new Style().setBold(true), totalFormat);
             finalizarTicket(escpos, "Gracias por su compra");
+            log.info("[IMPRIMIR_FACTURA] Trabajo completado exitosamente - IP: {}, PedidoID: {}", ipImpresora, data.get("id"));
 
         } catch (Exception e) {
+            log.error("[IMPRIMIR_FACTURA] Error en impresion - IP: {}, PedidoID: {}, Error: {}", ipImpresora, data.get("id"), e.getMessage());
             throw new IOException("Fallo en la impresión: " + e.getMessage(), e);
         }
     }
 
     public void imprimirCocina(Map<String, Object> data, String ipImpresora) throws IOException {
-    try (TcpIpOutputStream outputStream = new TcpIpOutputStream(ipImpresora, 9100);
+        log.info("[IMPRIMIR_COCINA] Iniciando trabajo - IP: {}, PedidoID: {}", ipImpresora, data.get("id"));
+        try (TcpIpOutputStream outputStream = new TcpIpOutputStream(ipImpresora, 9100);
             EscPos escpos = new EscPos(outputStream)) {
         
         Style normalCocinaStyle = new Style().setFontSize(Style.FontSize._1, Style.FontSize._2);
@@ -182,13 +190,15 @@ public class networkPrinterService {
             escpos.writeLF("------------------------------------------------");
             
             if (i == 0 && repeticiones == 2) {
-                finalizarTicket(escpos, "Fin comanda (1/2)"); 
+                finalizarTicket(escpos, "Fin comanda (1/2)");
             } else {
                 finalizarTicket(escpos, "Fin comanda");
             }
-        } 
+        }
+        log.info("[IMPRIMIR_COCINA] Trabajo completado exitosamente - IP: {}, PedidoID: {}", ipImpresora, data.get("id"));
 
     } catch (Exception e) {
+        log.error("[IMPRIMIR_COCINA] Error en impresion - IP: {}, PedidoID: {}, Error: {}", ipImpresora, data.get("id"), e.getMessage());
         throw new IOException("Fallo en la impresión: " + e.getMessage(), e);
     }
 }

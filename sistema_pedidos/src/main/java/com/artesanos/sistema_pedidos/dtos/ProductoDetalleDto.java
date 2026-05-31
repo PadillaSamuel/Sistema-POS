@@ -2,19 +2,26 @@ package com.artesanos.sistema_pedidos.dtos;
 
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-
 public class ProductoDetalleDto {
+    @NotBlank(message = "El nombre del producto es requerido")
     String nombreProducto;
+
+    @NotNull(message = "La cantidad es requerida")
+    @Min(value = 1, message = "La cantidad debe ser al menos 1")
     Integer cantidadProducto;
+
     Integer subtotalPedido;
     Integer precioMomento;
     String peticionCliente;
-    LocalDateTime fechaModificacion; 
+    LocalDateTime fechaModificacion;
 
     public ProductoDetalleDto(String nombre, Integer cantidad, Integer precio, Integer subtotal,
             String peticionCliente, LocalDateTime fechaModificacion) {
@@ -23,6 +30,6 @@ public class ProductoDetalleDto {
         this.precioMomento = precio;
         this.subtotalPedido = subtotal;
         this.peticionCliente = peticionCliente;
-        this.fechaModificacion= fechaModificacion;
+        this.fechaModificacion = fechaModificacion;
     }
 }

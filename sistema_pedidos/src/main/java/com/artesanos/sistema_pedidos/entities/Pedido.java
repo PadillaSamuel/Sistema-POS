@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.artesanos.sistema_pedidos.enums.MetodoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPedido;
 
@@ -28,7 +29,11 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "pedido")
+@Table(name = "pedido", indexes = {
+        @jakarta.persistence.Index(name = "idx_pedido_estado", columnList = "estado"),
+        @jakarta.persistence.Index(name = "idx_pedido_fecha", columnList = "fecha_pedido"),
+        @jakarta.persistence.Index(name = "idx_pedido_mesa_estado", columnList = "n_mesa, estado")
+})
 public class Pedido {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,7 +50,7 @@ public class Pedido {
     EstadoPedido estadoPedido;
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_pago")
-    EstadoPago estadoPago;
+    EstadoPago estadoPago;  
     @Column(name = "nombreDomicilio")
     String nombreDomicilio;
     @Column(name = "numero_cliente", columnDefinition = "VARCHAR(300)")
@@ -57,8 +62,16 @@ public class Pedido {
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     List<DetallePedido> detallesPedido;
 
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Pago> pagos = new ArrayList<>();
+
     public Pedido() {
         this.detallesPedido = new ArrayList<>();
+    }
+
+    public void addPago(Pago pago) {
+        pagos.add(pago);
+        pago.setPedido(this);
     }
 
     public void addDetalle(DetallePedido detalle) {

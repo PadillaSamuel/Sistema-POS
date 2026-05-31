@@ -5,6 +5,8 @@ import java.util.List;
 import com.artesanos.sistema_pedidos.enums.EstadoPago;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,9 +17,15 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PedidoDto {
     Integer id;
+
+    @Min(value = 1, message = "El número de mesa debe ser mayor a 0")
     Integer numeroMesa;
+
     Integer total;
+
+    @NotEmpty(message = "La lista de productos no puede estar vacía")
     List<ProductoDetalleDto> productos;
+
     String nombreDomicilio;
     EstadoPago estadoPago;
     String numeroCliente;

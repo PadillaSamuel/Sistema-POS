@@ -93,6 +93,7 @@ public class ProductoServiceImpl implements ProductoService {
         });
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<Producto> buscarPorNombreIncompleto(String nombreProducto) {
         String busquedaLimpia = nombreProducto.replace("+", " ").trim().toLowerCase();

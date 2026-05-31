@@ -215,7 +215,7 @@ const TomarPedido = () => {
                 await actualizarPedido()
                 imprimirComanda({
                     idPedido: id,
-                    impresoraIp: "192.168.1.200",
+                    impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || "192.168.1.200",
                     numeroMesa: mesaPedido,
                     nombreDomicilio: nombreDomicilio,
                     productos: pedido.map(p => ({
@@ -244,7 +244,7 @@ const TomarPedido = () => {
 
                     imprimirComanda({
                         idPedido: res_id.id,
-                        impresoraIp: "192.168.1.200",
+                        impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || "192.168.1.200",
                         numeroMesa: mesaPedido,
                         nombreDomicilio: nombreDomicilio,
                         productos: pedidoImprimir

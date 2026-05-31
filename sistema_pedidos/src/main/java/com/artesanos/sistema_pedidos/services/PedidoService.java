@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.artesanos.sistema_pedidos.dtos.PagoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
 import com.artesanos.sistema_pedidos.entities.Pedido;
@@ -24,4 +25,6 @@ public interface PedidoService {
     public List<PedidoDto> findEstadoPedidoResuelto();
     
     public List<PedidoDto> findEstadoPedidoAnulado();
+
+    public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos);
 }

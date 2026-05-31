@@ -98,7 +98,7 @@ const VerPedido = ({ n_pedido, n_mesa }) => {
     const impresionFac = async () => {
         await imprimirFactura({
             idPedido: id,
-            impresoraIp: "192.168.1.100",
+            impresoraIp: import.meta.env.VITE_IMPRESORA_FACTURA || "192.168.1.100",
             numeroMesa: mesa != undefined ? mesa : null,
             nombreDomicilio: domi != undefined ? domi : null,
             numeroCliente: celular,
