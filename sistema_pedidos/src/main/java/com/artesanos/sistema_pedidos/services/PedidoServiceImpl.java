@@ -29,6 +29,7 @@ import com.artesanos.sistema_pedidos.entities.Usuario;
 import com.artesanos.sistema_pedidos.enums.MetodoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPago;
 import com.artesanos.sistema_pedidos.enums.EstadoPedido;
+import com.artesanos.sistema_pedidos.repositories.PagoRepository;
 import com.artesanos.sistema_pedidos.repositories.PedidoRepository;
 import com.artesanos.sistema_pedidos.repositories.ProductoRepository;
 import com.artesanos.sistema_pedidos.repositories.UsuarioRepository;
@@ -41,12 +42,14 @@ public class PedidoServiceImpl implements PedidoService {
     private final PedidoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
+    private final PagoRepository pagoRepository;
 
-    public PedidoServiceImpl(PedidoRepository pedidoRepository,
-            UsuarioRepository usuarioRepository, ProductoRepository productoRepository) {
+    public PedidoServiceImpl(PedidoRepository pedidoRepository, UsuarioRepository usuarioRepository,
+            ProductoRepository productoRepository, PagoRepository pagoRepository) {
         this.pedidoRepository = pedidoRepository;
         this.productoRepository = productoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.pagoRepository = pagoRepository;
     }
 
     @Override
@@ -119,84 +122,87 @@ public class PedidoServiceImpl implements PedidoService {
     @SuppressWarnings("null")
     @Override
 
-public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto) {
-    return pedidoRepository.findById(id).map(pedido -> {
+    public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto) {
+        return pedidoRepository.findById(id).map(pedido -> {
 
-        if (pedidoBodyDto.getNumeroMesa() != null) {
-            pedido.setNumeroMesa(pedidoBodyDto.getNumeroMesa());
-        }
-        if (pedidoBodyDto.getNombreDomicilio() != null) {
-            pedido.setNombreDomicilio(pedidoBodyDto.getNombreDomicilio());
-            pedido.setNumeroCliente(pedidoBodyDto.getNumeroCliente());
-        }
-
-        if (pedidoBodyDto.getProductos() == null) {
-            return pedidoRepository.save(pedido);
-        }
-
-        LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"))
-                                                 .truncatedTo(ChronoUnit.MINUTES);
-
-        List<ProductoDetalleDto> dtosEntrantes = new ArrayList<>(pedidoBodyDto.getProductos());
-        
-        int totalAcumulado = 0;
-
-        Iterator<DetallePedido> iterator = pedido.getDetallesPedido().iterator();
-        
-        while (iterator.hasNext()) {
-            DetallePedido detalleExistente = iterator.next();
-            String nombreProductoExistente = detalleExistente.getProducto().getNombreProducto();
-
-            Optional<ProductoDetalleDto> dtoMatch = dtosEntrantes.stream()
-                    .filter(dto -> dto.getNombreProducto().equalsIgnoreCase(nombreProductoExistente))
-                    .findFirst();
-
-            if (dtoMatch.isPresent()) {
-                ProductoDetalleDto dto = dtoMatch.get();
-                
-                boolean cambioCantidad = !detalleExistente.getCantidadProducto().equals(dto.getCantidadProducto());
-                boolean cambioPeticion = !Objects.equals(detalleExistente.getPeticionCliente(), dto.getPeticionCliente());
-
-                int nuevoSubtotal = dto.getCantidadProducto() * detalleExistente.getProducto().getPrecio();
-
-                if (cambioCantidad || cambioPeticion) {
-                    detalleExistente.setCantidadProducto(dto.getCantidadProducto());
-                    detalleExistente.setPeticionCliente(dto.getPeticionCliente());
-                    detalleExistente.setSubtotalPedido(nuevoSubtotal);
-                    detalleExistente.setFechaModificacion(fechaActual); 
-                }
-
-                totalAcumulado += nuevoSubtotal;
-                dtosEntrantes.remove(dto); 
-
-            } else {
-                iterator.remove(); 
+            if (pedidoBodyDto.getNumeroMesa() != null) {
+                pedido.setNumeroMesa(pedidoBodyDto.getNumeroMesa());
             }
-        }
+            if (pedidoBodyDto.getNombreDomicilio() != null) {
+                pedido.setNombreDomicilio(pedidoBodyDto.getNombreDomicilio());
+                pedido.setNumeroCliente(pedidoBodyDto.getNumeroCliente());
+            }
 
-        for (ProductoDetalleDto dtoNuevo : dtosEntrantes) {
-            Producto prod = productoRepository.findByNombreProducto(dtoNuevo.getNombreProducto())
-                    .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado: " + dtoNuevo.getNombreProducto()));
+            if (pedidoBodyDto.getProductos() == null) {
+                return pedidoRepository.save(pedido);
+            }
 
-            int subtotal = dtoNuevo.getCantidadProducto() * prod.getPrecio();
+            LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"))
+                    .truncatedTo(ChronoUnit.MINUTES);
 
-            DetallePedido nuevoDetalle = new DetallePedido();
-            nuevoDetalle.setPedido(pedido);
-            nuevoDetalle.setProducto(prod);
-            nuevoDetalle.setCantidadProducto(dtoNuevo.getCantidadProducto());
-            nuevoDetalle.setPrecioMomento(prod.getPrecio());
-            nuevoDetalle.setSubtotalPedido(subtotal);
-            nuevoDetalle.setPeticionCliente(dtoNuevo.getPeticionCliente());
-            nuevoDetalle.setFechaModificacion(fechaActual); 
+            List<ProductoDetalleDto> dtosEntrantes = new ArrayList<>(pedidoBodyDto.getProductos());
 
-            totalAcumulado += subtotal;
-            pedido.getDetallesPedido().add(nuevoDetalle);
-        }
+            int totalAcumulado = 0;
 
-        pedido.setTotalPedido(totalAcumulado);
-        return pedidoRepository.save(pedido);
-    });
-}
+            Iterator<DetallePedido> iterator = pedido.getDetallesPedido().iterator();
+
+            while (iterator.hasNext()) {
+                DetallePedido detalleExistente = iterator.next();
+                String nombreProductoExistente = detalleExistente.getProducto().getNombreProducto();
+
+                Optional<ProductoDetalleDto> dtoMatch = dtosEntrantes.stream()
+                        .filter(dto -> dto.getNombreProducto().equalsIgnoreCase(nombreProductoExistente))
+                        .findFirst();
+
+                if (dtoMatch.isPresent()) {
+                    ProductoDetalleDto dto = dtoMatch.get();
+
+                    boolean cambioCantidad = !detalleExistente.getCantidadProducto().equals(dto.getCantidadProducto());
+                    boolean cambioPeticion = !Objects.equals(detalleExistente.getPeticionCliente(),
+                            dto.getPeticionCliente());
+
+                    int nuevoSubtotal = dto.getCantidadProducto() * detalleExistente.getProducto().getPrecio();
+
+                    if (cambioCantidad || cambioPeticion) {
+                        detalleExistente.setCantidadProducto(dto.getCantidadProducto());
+                        detalleExistente.setPeticionCliente(dto.getPeticionCliente());
+                        detalleExistente.setSubtotalPedido(nuevoSubtotal);
+                        detalleExistente.setFechaModificacion(fechaActual);
+                    }
+
+                    totalAcumulado += nuevoSubtotal;
+                    dtosEntrantes.remove(dto);
+
+                } else {
+                    iterator.remove();
+                }
+            }
+
+            for (ProductoDetalleDto dtoNuevo : dtosEntrantes) {
+                Producto prod = productoRepository.findByNombreProducto(dtoNuevo.getNombreProducto())
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Producto no encontrado: " + dtoNuevo.getNombreProducto()));
+
+                int subtotal = dtoNuevo.getCantidadProducto() * prod.getPrecio();
+
+                DetallePedido nuevoDetalle = new DetallePedido();
+                nuevoDetalle.setPedido(pedido);
+                nuevoDetalle.setProducto(prod);
+                nuevoDetalle.setCantidadProducto(dtoNuevo.getCantidadProducto());
+                nuevoDetalle.setPrecioMomento(prod.getPrecio());
+                nuevoDetalle.setSubtotalPedido(subtotal);
+                nuevoDetalle.setPeticionCliente(dtoNuevo.getPeticionCliente());
+                nuevoDetalle.setFechaModificacion(fechaActual);
+
+                totalAcumulado += subtotal;
+                pedido.getDetallesPedido().add(nuevoDetalle);
+            }
+
+            pedido.setTotalPedido(totalAcumulado);
+            return pedidoRepository.save(pedido);
+        });
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedido(LocalDateTime inicio, LocalDateTime fin) {
@@ -233,7 +239,6 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
         return pedidoRepository.findByEstadoPedido(EstadoPedido.CANCELADO);
     }
 
-
     public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos) {
         return pedidoRepository.findById(idPedido).map(pedido -> {
 
@@ -266,8 +271,7 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
             if (!sumaPagos.equals(pedido.getTotalPedido())) {
                 throw new IllegalArgumentException(
                         "El monto total de los pagos ($" + sumaPagos +
-                                ") no coincide con el total del pedido ($" + pedido.getTotalPedido() + ")"
-                );
+                                ") no coincide con el total del pedido ($" + pedido.getTotalPedido() + ")");
             }
 
             pedido.setEstadoPedido(EstadoPedido.RESUELTO);
@@ -304,8 +308,7 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
                     pedido.getNumeroMesa(),
                     pedido.getNombreDomicilio(),
                     pedido.getEstadoPago(),
-                    pedido.getNumeroCliente()
-            );
+                    pedido.getNumeroCliente());
             dto.setPagos(pagosDto);
             return dto;
         }).toList();
@@ -313,19 +316,32 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MetricaDTO> findPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado) {
+    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado) {
         List<Pedido> pedidos = pedidoRepository.findPedidosDelAnio(inicio, fin, estado);
         if (pedidos.isEmpty()) {
             return Optional.empty();
         }
+        List<Integer> ids = new ArrayList<>();
+        for (Pedido pedido : pedidos) {
+            ids.add(pedido.getId());
+        }
+        List<Pago> pagos = pagoRepository.findByPedidoIdIn(ids);
         Map<Integer, Integer> pedidosPorMes = new HashMap<>();
+        Map<Integer, Map<Integer, Integer>> pagosPorMes = new HashMap<>();
 
         for (Pedido pedido : pedidos) {
-            pedidosPorMes.merge(pedido.getFechaPedido().getMonthValue(), 1, Integer::sum);
+            int mes = pedido.getFechaPedido().getMonthValue();
+            pedidosPorMes.merge(mes, 1, Integer::sum);
+            pagosPorMes.putIfAbsent(mes, new HashMap<>());
+        }
+        for (Pago pago : pagos) {
+            int mes = pago.getPedido().getFechaPedido().getMonthValue();
+            int metodoPago = pago.getMetodoPago().ordinal();
+            pagosPorMes.get(mes).merge(metodoPago, pago.getMonto(), Integer::sum);
         }
         MetricaDTO dto = new MetricaDTO();
         dto.setPedidosMeses(pedidosPorMes);
+        dto.setPagosMeses(pagosPorMes);
         return Optional.of(dto);
-
     }
 }

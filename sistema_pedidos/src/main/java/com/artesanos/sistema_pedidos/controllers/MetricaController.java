@@ -42,9 +42,9 @@ public class MetricaController {
     @GetMapping("/anhos/{anho}")
     public ResponseEntity<Optional<MetricaDTO>> meetricasAnho(@PathVariable Integer anho) {
         LocalDateTime inicioAnho = LocalDateTime.of(anho, 1, 1, 0, 0, 0);
-        LocalDateTime finAnho = LocalDateTime.of(anho + 1, 1, 10, 0, 0, 0);
+        LocalDateTime finAnho = LocalDateTime.of(anho + 1, 1, 1, 0, 0, 0);
 
-        Optional<MetricaDTO> metricas = pedidoService.findPedidosAnho(inicioAnho, finAnho, "RESUELTO");
+        Optional<MetricaDTO> metricas = pedidoService.findMetricasPedidosAnho(inicioAnho, finAnho, "RESUELTO");
         if (metricas.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }

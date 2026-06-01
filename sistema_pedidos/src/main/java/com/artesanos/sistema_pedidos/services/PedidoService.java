@@ -32,5 +32,5 @@ public interface PedidoService {
 
     public List<PedidoPagoDto> findPedidosConPagosByFecha(LocalDateTime inicio, LocalDateTime fin, String estado);
 
-    public Optional<MetricaDTO> findPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado);
+    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado);
 }
