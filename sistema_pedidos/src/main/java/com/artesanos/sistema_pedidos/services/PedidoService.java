@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.artesanos.sistema_pedidos.dtos.MetricaDTO;
 import com.artesanos.sistema_pedidos.dtos.PagoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
@@ -30,4 +31,6 @@ public interface PedidoService {
     public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos);
 
     public List<PedidoPagoDto> findPedidosConPagosByFecha(LocalDateTime inicio, LocalDateTime fin, String estado);
+
+    public Optional<MetricaDTO> findPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado);
 }

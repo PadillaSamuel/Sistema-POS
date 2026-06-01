@@ -4,7 +4,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.Iterator;
@@ -12,6 +14,7 @@ import java.util.Iterator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.artesanos.sistema_pedidos.dtos.MetricaDTO;
 import com.artesanos.sistema_pedidos.dtos.PagoDto;
 import com.artesanos.sistema_pedidos.dtos.PagoInfoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
@@ -306,5 +309,23 @@ public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto
             dto.setPagos(pagosDto);
             return dto;
         }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<MetricaDTO> findPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado) {
+        List<Pedido> pedidos = pedidoRepository.findPedidosDelAnio(inicio, fin, estado);
+        if (pedidos.isEmpty()) {
+            return Optional.empty();
+        }
+        Map<Integer, Integer> pedidosPorMes = new HashMap<>();
+
+        for (Pedido pedido : pedidos) {
+            pedidosPorMes.merge(pedido.getFechaPedido().getMonthValue(), 1, Integer::sum);
+        }
+        MetricaDTO dto = new MetricaDTO();
+        dto.setPedidosMeses(pedidosPorMes);
+        return Optional.of(dto);
+
     }
 }
