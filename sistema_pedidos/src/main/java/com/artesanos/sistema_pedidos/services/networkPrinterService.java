@@ -2,6 +2,10 @@
 package com.artesanos.sistema_pedidos.services;
 
 import com.artesanos.sistema_pedidos.dtos.ProductoDetalleDto;
+import com.artesanos.sistema_pedidos.entities.Pedido;
+import com.artesanos.sistema_pedidos.enums.EstadoPedido;
+import com.artesanos.sistema_pedidos.enums.MetodoPago;
+import com.artesanos.sistema_pedidos.repositories.PedidoRepository;
 import com.github.anastaciocintra.escpos.EscPos;
 import com.github.anastaciocintra.escpos.EscPosConst;
 import com.github.anastaciocintra.escpos.Style;
@@ -21,10 +25,15 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Service
@@ -32,6 +41,7 @@ public class networkPrinterService {
 
     private static final Logger log = LoggerFactory.getLogger(networkPrinterService.class);
     private final ResourceLoader resourceLoader;
+    private final PedidoRepository pedidoRepository;
 
     private static final int PRINTER_CHAR_WIDTH = 48;
     private final Style boldCenter = new Style().setBold(true).setFontSize(Style.FontSize._1, Style.FontSize._1)
@@ -41,8 +51,9 @@ public class networkPrinterService {
             .setJustification(EscPosConst.Justification.Center);
     private final Style normal = new Style().setFontSize(Style.FontSize._1, Style.FontSize._1);
 
-    public networkPrinterService(ResourceLoader resourceLoader) {
+    public networkPrinterService(ResourceLoader resourceLoader, PedidoRepository pedidoRepository) {
         this.resourceLoader = resourceLoader;
+        this.pedidoRepository = pedidoRepository;
     }
 
     public void imprimirFactura(Map<String, Object> data, String ipImpresora) throws IOException {
@@ -200,6 +211,87 @@ public class networkPrinterService {
     } catch (Exception e) {
         log.error("[IMPRIMIR_COCINA] Error en impresion - IP: {}, PedidoID: {}, Error: {}", ipImpresora, data.get("id"), e.getMessage());
         throw new IOException("Fallo en la impresión: " + e.getMessage(), e);
+    }
+}
+
+    public void imprimirCierreDelDia(String ipImpresora) throws IOException {
+    log.info("[IMPRIMIR_CIERRE] Iniciando trabajo de cierre - IP: {}", ipImpresora);
+
+    LocalDate hoy = LocalDate.now(ZoneId.of("America/Bogota"));
+    LocalDateTime inicio = hoy.atStartOfDay();
+    LocalDateTime fin = inicio.plusDays(1);
+
+    List<Pedido> pedidos = pedidoRepository.findByFechaPedidoBetweenWithPagos(inicio, fin, EstadoPedido.RESUELTO);
+
+    if (pedidos == null || pedidos.isEmpty()) {
+        log.warn("[IMPRIMIR_CIERRE] No hay pedidos resueltos para hoy ({})", hoy);
+        throw new NoSuchElementException("No hay pedidos resueltos en el dia actual para imprimir el cierre");
+    }
+
+    EnumMap<MetodoPago, Integer> totalesPorMetodo = new EnumMap<>(MetodoPago.class);
+    for (MetodoPago m : MetodoPago.values()) {
+        totalesPorMetodo.put(m, 0);
+    }
+    int totalGeneral = 0;
+
+    for (Pedido p : pedidos) {
+        if (p.getPagos() != null) {
+            for (var pago : p.getPagos()) {
+                Integer monto = pago.getMonto() != null ? pago.getMonto() : 0;
+                totalesPorMetodo.merge(pago.getMetodoPago(), monto, Integer::sum);
+                totalGeneral += monto;
+            }
+        }
+    }
+
+    int totalPedidos = pedidos.size();
+
+    try (TcpIpOutputStream outputStream = new TcpIpOutputStream(ipImpresora, 9100);
+            EscPos escpos = new EscPos(outputStream)) {
+
+        log.debug("[IMPRIMIR_CIERRE] Conexion TCP abierta exitosamente a {}", ipImpresora);
+
+        printLogo(escpos);
+
+        escpos.writeLF(boldCenter, "CIERRE DE CAJA");
+        escpos.writeLF("================================");
+        escpos.feed(1);
+
+        DateTimeFormatter fechaFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter horaFmt = DateTimeFormatter.ofPattern("HH:mm");
+        String fechaStr = hoy.format(fechaFmt);
+        String horaStr = LocalDateTime.now(ZoneId.of("America/Bogota")).format(horaFmt);
+
+        escpos.writeLF(normal, "Fecha:    " + fechaStr);
+        escpos.writeLF(normal, "Hora:     " + horaStr);
+        escpos.writeLF("--------------------------------");
+        escpos.writeLF(boldLeft, "Pedidos del dia: " + totalPedidos);
+        escpos.writeLF("--------------------------------");
+        escpos.writeLF(boldLeft, "Por metodo de pago:");
+        escpos.feed(1);
+
+        for (MetodoPago m : MetodoPago.values()) {
+            String nombre = m.name();
+            String monto = "$" + formatCurrency(totalesPorMetodo.get(m));
+            String linea = padRight(nombre, PRINTER_CHAR_WIDTH - 12) + padLeft(monto, 12);
+            escpos.writeLF(normal, linea);
+        }
+
+        escpos.writeLF("--------------------------------");
+        String totalStr = "TOTAL: $" + formatCurrency(totalGeneral);
+        escpos.writeLF(new Style().setBold(true), padLeft(totalStr, PRINTER_CHAR_WIDTH));
+        escpos.writeLF("================================");
+
+        finalizarTicket(escpos, "Cierre generado correctamente");
+
+        log.info("[IMPRIMIR_CIERRE] Trabajo completado - IP: {}, Pedidos: {}, Total: {}",
+                ipImpresora, totalPedidos, totalGeneral);
+
+    } catch (NoSuchElementException e) {
+        throw e;
+    } catch (Exception e) {
+        log.error("[IMPRIMIR_CIERRE] Error en impresion - IP: {}, Error: {}", ipImpresora, e.getMessage());
+        throw new IOException("Fallo en la impresión del cierre: " + e.getMessage(), e);
     }
 }
 

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.artesanos.sistema_pedidos.dtos.CierreCajaDto;
 import com.artesanos.sistema_pedidos.dtos.ComandaDto;
 import com.artesanos.sistema_pedidos.dtos.FacturaDto;
 import com.artesanos.sistema_pedidos.services.DetallePedidoService;
@@ -22,6 +23,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping(path = "/api/impresora")
@@ -107,6 +110,34 @@ public class ImpresoraController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error en el proceso de impresión: " + e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "404", description = "No hay pedidos resueltos en el dia actual"),
+            @ApiResponse(responseCode = "500", description = "Error al imprimir cierre, posible ip no encontrada", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Cierre de caja impreso")
+    })
+    @Operation(summary = "Imprimir cierre de caja del dia actual")
+    @PreAuthorize("hasAuthority('ROLE_CAJA')")
+    @PostMapping("/cierre")
+    public ResponseEntity<?> imprimirCierre(@RequestBody CierreCajaDto payload) {
+        log.info("[CIERRE] Solicitud de impresion de cierre recibida - IP: {}", payload.getImpresoraIp());
+        try {
+            String printerIp = payload.getImpresoraIp();
+
+            log.debug("[CIERRE] IP validada y aceptada: {}", printerIp);
+
+            networkPrinterService.imprimirCierreDelDia(printerIp);
+
+            return ResponseEntity.ok("Cierre de caja impreso exitosamente a: " + printerIp);
+
+        } catch (NoSuchElementException e) {
+            log.warn("[CIERRE] {}", e.getMessage());
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error en el proceso de impresión del cierre: " + e.getMessage());
         }
     }
 
