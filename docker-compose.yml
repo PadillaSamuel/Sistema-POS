@@ -15,13 +15,17 @@ services:
       - artesanos-net
 
   backend:
-    build: ./sistema_pedidos
+    build:
+      context: ./sistema_pedidos
+      network: host
     container_name: backend-api
     restart: always
     ports:
       - "8080:8080"
     depends_on:
       - mysql-db
+    env_file:
+      - ./sistema_pedidos/.env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/artesanos?allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
