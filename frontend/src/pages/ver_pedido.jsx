@@ -1,316 +1,308 @@
-import './ver_pedido.css'
-import FilaPedido from '../components/fila_pedido'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { apiRequest } from '../services/api';
-import { useEffect, useRef, useState } from 'react';
-import { formateador } from './ver_ventas';
-import { useReactToPrint } from "react-to-print";
-import { toast } from 'react-toastify';
+import { Ban, Printer, Receipt } from 'lucide-react'
+import { useReactToPrint } from 'react-to-print'
+import { toast } from 'react-toastify'
 
+import { apiRequest } from '../services/api'
+import { formateador } from '../lib/format'
+import FilaPedido from '../components/fila_pedido'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
-const VerPedido = ({ n_pedido, n_mesa }) => {
-    const [pedido, setPedido] = useState([])
-    const [cantidad, setCantidad] = useState(0)
-    const { id, mesa, estado, domi } = useParams();
-    const [total, setTotal] = useState(0)
-    const comandaRef = useRef();
-    const navigate = useNavigate();
-    const [celular, setCelular] = useState(null)
-    const [showModalPago, setShowModalPago] = useState(false)
-    const [pagoMetodos, setPagoMetodos] = useState({
-        EFECTIVO: '',
-        TRANSFERENCIA: '',
-        DATAFONO: ''
+const METODOS = [
+  { key: 'EFECTIVO', label: 'Efectivo' },
+  { key: 'TRANSFERENCIA', label: 'Transferencia' },
+  { key: 'DATAFONO', label: 'Datáfono' },
+]
+
+const VerPedido = () => {
+  const { id, mesa, estado, domi } = useParams()
+  const [pedido, setPedido] = useState([])
+  const [total, setTotal] = useState(0)
+  const [celular, setCelular] = useState(null)
+  const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
+  const [pagoMetodos, setPagoMetodos] = useState({
+    EFECTIVO: '',
+    TRANSFERENCIA: '',
+    DATAFONO: '',
+  })
+  const comandaRef = useRef()
+  const navigate = useNavigate()
+  const esResuelto = estado !== undefined
+
+  useEffect(() => {
+    const traerPedido = async () => {
+      const tmp = await apiRequest(`/api/detallePedido/${id}`, { metodo: 'GET' })
+      setPedido(tmp)
+      const suma = tmp.reduce((cnt, p) => cnt + p.subtotalPedido, 0)
+      setTotal(suma)
+    }
+    traerPedido()
+  }, [id])
+
+  useEffect(() => {
+    const cargarCel = async () => {
+      const ruta = esResuelto ? '/api/pedidos/resueltos' : '/api/pedidos/listar'
+      const pediList = await apiRequest(ruta, { metodo: 'GET' })
+      const pedidoCel = pediList?.find((p) => p.id === Number(id))
+      if (pedidoCel?.numeroCliente !== undefined) {
+        setCelular(pedidoCel.numeroCliente)
+      }
+    }
+    cargarCel()
+  }, [id, esResuelto])
+
+  const handlePagoMetodoChange = (metodo, value) => {
+    const numericValue = value.replace(/\D/g, '')
+    setPagoMetodos((prev) => ({ ...prev, [metodo]: numericValue }))
+  }
+
+  const calcularSumaPagos = () =>
+    Object.values(pagoMetodos).reduce((sum, val) => sum + (parseInt(val) || 0), 0)
+
+  const validarYEnviarPagos = async () => {
+    const sumaPagos = calcularSumaPagos()
+
+    if (sumaPagos === 0) {
+      toast.error('Debe ingresar al menos un método de pago')
+      return
+    }
+    if (sumaPagos !== total) {
+      toast.error(
+        `La suma de los pagos (${formateador.format(sumaPagos)}) no coincide con el total del pedido (${formateador.format(total)})`
+      )
+      return
+    }
+
+    const pagos = METODOS.flatMap(({ key }) => {
+      const monto = parseInt(pagoMetodos[key]) || 0
+      return monto > 0 ? [{ metodoPago: key, monto }] : []
     })
 
-    const pedidoPorId = async () => {
-        return apiRequest(`/api/detallePedido/${id}`, {
-            metodo: "GET"
-        })
+    try {
+      await apiRequest(`/api/pedidos/pagar/${id}`, { metodo: 'PUT', body: pagos })
+      toast.success('Pago procesado correctamente')
+      setModalPagoAbierto(false)
+      navigate('/pedidos')
+    } catch (error) {
+      toast.error(`Error al procesar pago: ${error.message}`)
     }
-    const listarPedido = async () => {
-        return apiRequest('/api/pedidos/listar', {
-            metodo: 'GET'
-        })
-    }
+  }
 
-    const listarResueltos = async () => {
-        return apiRequest('/api/pedidos/resueltos', {
-            metodo: 'GET'
-        })
-    }
+  const abrirModalPago = () => {
+    setPagoMetodos({ EFECTIVO: '', TRANSFERENCIA: '', DATAFONO: '' })
+    setModalPagoAbierto(true)
+  }
 
-    const anularPedido = async () => {
-        return apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/ANULADO`, {
-            metodo: "PUT"
-        })
-    }
+  const imprimir = useReactToPrint({ contentRef: comandaRef })
 
-    const procesarPagos = async (pagos) => {
-        return apiRequest(`/api/pedidos/pagar/${id}`, {
-            metodo: 'PUT',
-            body: pagos
-        })
-    }
+  const imprimirFactura = async (cuerpo) =>
+    apiRequest('/api/impresora/factura', { metodo: 'POST', body: cuerpo })
 
-    const cancelarPedido = async () => {
-        const tmp = await anularPedido();
-        navigate("/pedidos");
-    }
+  const impresionFac = async () => {
+    await imprimirFactura({
+      idPedido: Number(id),
+      impresoraIp: import.meta.env.VITE_IMPRESORA_FACTURA || '192.168.1.100',
+      numeroMesa: mesa !== undefined ? mesa : null,
+      nombreDomicilio: domi !== undefined ? domi : null,
+      numeroCliente: celular,
+      productos: pedido.map((p) => ({
+        nombreProducto: p.nombreProducto,
+        cantidadProducto: p.cantidadProducto,
+        subtotalPedido: p.subtotalPedido,
+        precioMomento: p.precioMomento,
+        peticionCliente: p.peticionCliente,
+      })),
+      total,
+    })
+  }
 
-    useEffect(() => {
-        const traerPedido = async () => {
-            const tmp = await pedidoPorId()
-            setCantidad(tmp.length)
-            setPedido(tmp)
-            const suma = tmp.reduce((cnt, p) => {
-                return cnt + p.subtotalPedido
-            }, 0)
-            setTotal(suma)
-        }
-        traerPedido()
-    }, [])
+  const anularPedido = async () => {
+    await apiRequest(`/api/pedidos/actualizar/${id}/CANCELADO/ANULADO`, { metodo: 'PUT' })
+    navigate('/pedidos')
+  }
 
-    useEffect(() => {
-        const cargarCel = async () => {
-            let pediList = null
-            if (estado != undefined) {
-                pediList = await listarResueltos()
-            } else {
-                pediList = await listarPedido()
-            }
-            if (pediList != null) {
-                const pedidoCel = pediList.find(p => p.id === Number(id))
-                if (pedidoCel?.numeroCliente != undefined) {
-                    setCelular(pedidoCel.numeroCliente)
-                }
-            }
+  const sumaPagos = calcularSumaPagos()
+  const pagosBalanceados = sumaPagos === total && sumaPagos > 0
+  const diferencia = Math.abs(total - sumaPagos)
 
-        }
-        cargarCel()
-    }, [])
+  return (
+    <>
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+        <header className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight">Pedido {id}</h1>
+          <p className="text-sm text-muted-foreground">
+            {domi !== undefined ? `Domicilio: ${domi}` : `Mesa N.${mesa}`}
+          </p>
+        </header>
 
-    const imprimir = useReactToPrint({
-        contentRef: comandaRef
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Productos</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Productos</TableHead>
+                  <TableHead className="w-24 text-center">Cantidad</TableHead>
+                  <TableHead className="w-32 text-center">Precio</TableHead>
+                  <TableHead className="w-32 text-center">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pedido.map((p, index) => (
+                  <FilaPedido
+                    key={index}
+                    nombre={p.nombreProducto.charAt(0).toUpperCase() + p.nombreProducto.slice(1)}
+                    cantidad={p.cantidadProducto}
+                    precio={formateador.format(p.precioMomento)}
+                    subtotal={formateador.format(p.subtotalPedido)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between border-t pt-4">
+            <span className="text-base font-medium">Total</span>
+            <span className="text-lg font-bold tabular-nums">{formateador.format(total)}</span>
+          </CardFooter>
+        </Card>
 
-    });
+        <div className="flex flex-wrap justify-end gap-2">
+          {esResuelto ? (
+            <Button onClick={impresionFac}>
+              <Printer className="h-5 w-5" aria-hidden="true" />
+              <span>Imprimir Comanda</span>
+            </Button>
+          ) : (
+            <>
+              <Button variant="destructive" onClick={anularPedido}>
+                <Ban className="h-5 w-5" aria-hidden="true" />
+                <span>Anular pedido</span>
+              </Button>
+              <Button onClick={abrirModalPago}>
+                <Receipt className="h-5 w-5" aria-hidden="true" />
+                <span>Confirmar pago</span>
+              </Button>
+              <Button variant="outline" onClick={impresionFac}>
+                <Printer className="h-5 w-5" aria-hidden="true" />
+                <span>Imprimir Comanda</span>
+              </Button>
+            </>
+          )}
+        </div>
+      </section>
 
-    const impresionFac = async () => {
-        await imprimirFactura({
-            idPedido: id,
-            impresoraIp: import.meta.env.VITE_IMPRESORA_FACTURA || "192.168.1.100",
-            numeroMesa: mesa != undefined ? mesa : null,
-            nombreDomicilio: domi != undefined ? domi : null,
-            numeroCliente: celular,
-            productos: pedido.map(p => (
-                {
-                    nombreProducto: p.nombreProducto,
-                    cantidadProducto: p.cantidadProducto,
-                    subtotalPedido: p.subtotalPedido,
-                    precioMomento: p.precioMomento,
-                    peticionCliente: p.peticionCliente
-                }
-            )),
-            total: total
+      <Dialog open={modalPagoAbierto} onOpenChange={setModalPagoAbierto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar pago</DialogTitle>
+            <DialogDescription>
+              Ingresa el monto recibido por cada método de pago. La suma debe
+              coincidir con el total del pedido.
+            </DialogDescription>
+          </DialogHeader>
 
-        })
+          <div className="flex flex-col gap-3">
+            {METODOS.map(({ key, label }) => (
+              <div key={key} className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                <Label htmlFor={`pago-${key}`} className="text-sm font-semibold">
+                  {label.toUpperCase()}
+                </Label>
+                <Input
+                  id={`pago-${key}`}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={pagoMetodos[key]}
+                  onChange={(e) => handlePagoMetodoChange(key, e.target.value)}
+                  className="w-32 text-right"
+                />
+              </div>
+            ))}
+          </div>
 
-    }
+          <Separator />
 
-    const imprimirFactura = async (cuerpo) => {
-        return apiRequest('/api/impresora/factura', {
-            metodo: 'POST',
-            body: cuerpo
-        })
-    }
-
-    const calcularSumaPagos = () => {
-        const valores = Object.values(pagoMetodos).map(v => parseInt(v) || 0)
-        return valores.reduce((sum, val) => sum + val, 0)
-    }
-
-    const validarYEnviarPagos = async () => {
-        const sumaPagos = calcularSumaPagos()
-
-        if (sumaPagos === 0) {
-            toast.error("Debe ingresar al menos un método de pago");
-            return;
-        }
-
-        if (sumaPagos !== total) {
-            toast.error(`La suma de los pagos (${formateador.format(sumaPagos)}) no coincide con el total del pedido (${formateador.format(total)})`);
-            return;
-        }
-
-        const pagos = []
-        if (pagoMetodos.EFECTIVO && parseInt(pagoMetodos.EFECTIVO) > 0) {
-            pagos.push({ metodoPago: "EFECTIVO", monto: parseInt(pagoMetodos.EFECTIVO) })
-        }
-        if (pagoMetodos.TRANSFERENCIA && parseInt(pagoMetodos.TRANSFERENCIA) > 0) {
-            pagos.push({ metodoPago: "TRANSFERENCIA", monto: parseInt(pagoMetodos.TRANSFERENCIA) })
-        }
-        if (pagoMetodos.DATAFONO && parseInt(pagoMetodos.DATAFONO) > 0) {
-            pagos.push({ metodoPago: "DATAFONO", monto: parseInt(pagoMetodos.DATAFONO) })
-        }
-
-        try {
-            await procesarPagos(pagos)
-            toast.success("Pago procesado correctamente");
-            setShowModalPago(false)
-            navigate("/pedidos");
-        } catch (error) {
-            toast.error(`Error al procesar pago: ${error.message}`);
-        }
-    }
-
-    const handlePagoMetodoChange = (metodo, value) => {
-        const numericValue = value.replace(/\D/g, '')
-        setPagoMetodos(prev => ({
-            ...prev,
-            [metodo]: numericValue
-        }))
-    }
-
-    const abrirModalPago = () => {
-        setPagoMetodos({ EFECTIVO: '', TRANSFERENCIA: '', DATAFONO: '' })
-        setShowModalPago(true)
-    }
-
-    const cerrarModalPago = () => {
-        setShowModalPago(false)
-    }
-
-    return (
-        <>
-            <section className='fila-pedido-sec'>
-                <div className='fila-pedido-div-uno'>
-                    <div className='fila-pedido-text-pedido'>
-                        <h3>Pedido {id}</h3>
-                    </div>
-                    <div className='fila-pedido-text-mesa'>
-                        {domi != undefined ? (
-                            <h3>{domi}</h3>
-                        ) : (
-                            <h3>Mesa N.{mesa}</h3>
-                        )
-
-                        }
-
-                    </div>
-                </div>
-                <div className='fila-pedido-div-dos'>
-                    <div className='fila-pedido-index'>
-                        <h3>Productos</h3>
-                        <h3>Cantidad</h3>
-                        <h3>Precio</h3>
-                        <h3>Total</h3>
-                    </div>
-                    <div className='filas_ver'>
-
-                        {
-                            pedido.map((p, index) => (
-                                <FilaPedido key={index} nombre={p.nombreProducto.charAt(0).toUpperCase() + p.nombreProducto.slice(1)} cantidad={p.cantidadProducto} precio={formateador.format(p.precioMomento)} subtotal={formateador.format(p.subtotalPedido)} />
-                            ))
-
-
-                        }
-
-                    </div>
-                    <div className='fila-pedido-total'>
-                        <h3>Total</h3>
-                        <div>{formateador.format(total)}</div>
-                    </div>
-                </div>
-                <div className='fila-pedido-div-tres'>
-                    {estado != undefined ? (
-                        <>
-                            <div>
-                                <button className='fila-boton-dos' onClick={impresionFac}>Imprimir Comanda</button>
-                            </div>
-                        </>
-
-                    ) : (
-                        <>
-                            <div>
-                                <button className='fila-boton-uno' onClick={cancelarPedido}>Anular Pedido</button>
-                            </div>
-                            <div>
-                                <button className='fila-boton-dos' onClick={abrirModalPago}>Confirmar Pago</button>
-                            </div>
-                            <div>
-                                <button className='fila-boton-dos' onClick={impresionFac}>Imprimir Comanda</button>
-                            </div>
-                        </>
-                    )
-                    }
-
-                </div>
-            </section>
-
-            {showModalPago && (
-                <div className='modal-pago-overlay' onClick={(e) => {
-                    if (e.target.className === 'modal-pago-overlay') cerrarModalPago()
-                }}>
-                    <div className='modal-pago'>
-                        <h2 className='modal-pago-titulo'>Confirmar Pago</h2>
-
-                        <div className='modal-pago-campos'>
-                            <div className='modal-pago-campo'>
-                                <label>EFECTIVO</label>
-                                <input
-                                    type='text'
-                                    inputMode='numeric'
-                                    placeholder='0'
-                                    value={pagoMetodos.EFECTIVO}
-                                    onChange={(e) => handlePagoMetodoChange('EFECTIVO', e.target.value)}
-                                />
-                            </div>
-
-                            <div className='modal-pago-campo'>
-                                <label>TRANSFERENCIA</label>
-                                <input
-                                    type='text'
-                                    inputMode='numeric'
-                                    placeholder='0'
-                                    value={pagoMetodos.TRANSFERENCIA}
-                                    onChange={(e) => handlePagoMetodoChange('TRANSFERENCIA', e.target.value)}
-                                />
-                            </div>
-
-                            <div className='modal-pago-campo'>
-                                <label>DATAFONO</label>
-                                <input
-                                    type='text'
-                                    inputMode='numeric'
-                                    placeholder='0'
-                                    value={pagoMetodos.DATAFONO}
-                                    onChange={(e) => handlePagoMetodoChange('DATAFONO', e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className='modal-pago-total'>
-                            <span>Total: {formateador.format(total)}</span>
-                        </div>
-
-                        <div className={`modal-pago-suma ${calcularSumaPagos() === total ? 'ok' : ''}`}>
-                            <span>Pago: {formateador.format(calcularSumaPagos())}</span>
-                            {calcularSumaPagos() !== total && calcularSumaPagos() > 0 && (
-                                <span className='modal-pago-diferencia'>
-                                    {calcularSumaPagos() > total ? 'Exceso' : 'Faltante'}: {formateador.format(Math.abs(total - calcularSumaPagos()))}
-                                </span>
-                            )}
-                        </div>
-
-                        <div className='modal-pago-botones'>
-                            <button className='modal-pago-btn-cancelar' onClick={cerrarModalPago}>Cancelar</button>
-                            <button className='modal-pago-btn-confirmar' onClick={validarYEnviarPagos}>Confirmar Pago</button>
-                        </div>
-                    </div>
-                </div>
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Total del pedido</span>
+              <span className="font-medium tabular-nums">{formateador.format(total)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Pago</span>
+              <span
+                className={cn(
+                  'font-medium tabular-nums',
+                  pagosBalanceados ? 'text-primary' : 'text-foreground'
+                )}
+              >
+                {formateador.format(sumaPagos)}
+              </span>
+            </div>
+            {sumaPagos > 0 && !pagosBalanceados && (
+              <div
+                className={cn(
+                  'flex items-center justify-between text-xs',
+                  sumaPagos > total ? 'text-destructive' : 'text-destructive'
+                )}
+              >
+                <span>{sumaPagos > total ? 'Exceso' : 'Faltante'}</span>
+                <span className="tabular-nums">{formateador.format(diferencia)}</span>
+              </div>
             )}
-        </>
-    )
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalPagoAbierto(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={validarYEnviarPagos}>Confirmar pago</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div ref={comandaRef} className="hidden print:block">
+        <h2>Pedido {id}</h2>
+        <p>{domi !== undefined ? `Domicilio: ${domi}` : `Mesa N.${mesa}`}</p>
+        <ul>
+          {pedido.map((p, i) => (
+            <li key={i}>
+              {p.cantidadProducto} x {p.nombreProducto} = {formateador.format(p.subtotalPedido)}
+            </li>
+          ))}
+        </ul>
+        <p>Total: {formateador.format(total)}</p>
+      </div>
+    </>
+  )
 }
 
 export default VerPedido
