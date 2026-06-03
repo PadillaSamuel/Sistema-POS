@@ -73,11 +73,13 @@ const CrearProducto = () => {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
+    <section className="flex min-h-full w-full flex-col items-center justify-center gap-4 p-6">
+      <div className="flex w-full max-w-md flex-col gap-4">
       <header className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
+          className="lg:hidden"
           onClick={volverAtras}
           aria-label="Volver"
         >
@@ -142,6 +144,7 @@ const CrearProducto = () => {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </section>
   )
 }

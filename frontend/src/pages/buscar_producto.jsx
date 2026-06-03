@@ -49,6 +49,7 @@ const BuscarProducto = () => {
         <Button
           variant="ghost"
           size="icon"
+          className="lg:hidden"
           onClick={() => navigate('/caja')}
           aria-label="Volver"
         >
@@ -83,13 +84,13 @@ const BuscarProducto = () => {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <Table containerClassName="max-h-[60vh]">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">ID</TableHead>
+                <TableHead className="w-20 text-center">ID</TableHead>
                 <TableHead>Nombre</TableHead>
-                <TableHead className="w-32 text-right">Precio</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead className="w-32 text-center">Precio</TableHead>
+                <TableHead className="w-24 text-center">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -108,15 +109,15 @@ const BuscarProducto = () => {
               ) : (
                 pizzas.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                    <TableCell className="text-center font-mono text-xs">{p.id}</TableCell>
                     <TableCell>
                       {p.nombreProducto.charAt(0).toUpperCase() + p.nombreProducto.slice(1)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-center tabular-nums">
                       {formateador.format(p.precio)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
