@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { jwtDecode } from 'jwt-decode'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Plus, Receipt, Search, ShoppingBag, Trash2, User } from 'lucide-react'
+import { Loader2, Plus, Receipt, Search, ShoppingBag, Trash2, User } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
@@ -24,6 +24,10 @@ import { cn } from '@/lib/utils'
 const CARACTERES_INVALIDOS = /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s'-]/g
 
 const limpiarNombre = (val) => (val || '').replace(CARACTERES_INVALIDOS, '')
+
+const NOMBRE_MIN = 2
+const NOMBRE_MAX = 80
+const CEL_REGEX = /^[0-9+\-\s()]*$/
 
 const ROL = () => localStorage.getItem('rol') || ''
 
@@ -62,6 +66,8 @@ const TomarPedido = () => {
     return stateDomi.celCliente ?? null
   })
   const [busquedaAbierta, setBusquedaAbierta] = useState(false)
+  const [errores, setErrores] = useState({})
+  const [enviando, setEnviando] = useState(false)
 
   useEffect(() => {
     if (!esEdicion) return
@@ -155,9 +161,33 @@ const TomarPedido = () => {
   const cambiarDomi = (e) => {
     const limpio = limpiarNombre(e.target.value)
     if (limpio !== e.target.value) {
-      toast.error('No se permiten caracteres especiales')
+      setErrores((prev) => ({
+        ...prev,
+        nombre: 'Solo letras, números, espacios, apóstrofes y guiones.',
+      }))
+    } else {
+      setErrores((prev) => {
+        const { nombre: _omit, ...rest } = prev
+        return rest
+      })
     }
     setNombreDomicilio(limpio)
+  }
+
+  const cambiarCel = (e) => {
+    const v = e.target.value
+    if (v && !CEL_REGEX.test(v)) {
+      setErrores((prev) => ({
+        ...prev,
+        celular: 'Solo dígitos, espacios, +, - y ().',
+      }))
+      return
+    }
+    setErrores((prev) => {
+      const { celular: _omit, ...rest } = prev
+      return rest
+    })
+    setCelCliente(v)
   }
 
   const productosCuerpo = () =>
@@ -246,16 +276,42 @@ const TomarPedido = () => {
     navigate(rol === 'ROLE_MESERA' ? '/mesera' : '/pedidos')
   }
 
+  const validarDomicilio = () => {
+    const nuevos = {}
+    const nombreLimpio = (nombreDomicilio ?? '').trim()
+    if (!nombreLimpio) {
+      nuevos.nombre = 'Ingresa el nombre del cliente.'
+    } else if (nombreLimpio.length < NOMBRE_MIN) {
+      nuevos.nombre = `El nombre debe tener al menos ${NOMBRE_MIN} caracteres.`
+    } else if (nombreLimpio.length > NOMBRE_MAX) {
+      nuevos.nombre = `El nombre no puede tener más de ${NOMBRE_MAX} caracteres.`
+    } else if (CARACTERES_INVALIDOS.test(nombreLimpio)) {
+      nuevos.nombre = 'No se permiten caracteres especiales.'
+    }
+    if ((celCliente ?? '').trim() && !CEL_REGEX.test(celCliente.trim())) {
+      nuevos.celular = 'Formato de celular inválido.'
+    }
+    return nuevos
+  }
+
   const confirmar = async () => {
-    if (pedido.length === 0) return
-    if (esDomicilio && (!nombreDomicilio || nombreDomicilio === '' || nombreDomicilio === '.')) {
-      toast.error('Ingresa el nombre del cliente')
+    if (enviando) return
+    if (pedido.length === 0) {
+      toast.error('Añade al menos un producto')
       return
     }
-    if (!esDomicilio && (!mesaPedido || mesaPedido === 0)) {
+    if (esDomicilio) {
+      const nuevosErrores = validarDomicilio()
+      setErrores(nuevosErrores)
+      if (Object.keys(nuevosErrores).length > 0) {
+        toast.error('Revisa los datos del cliente')
+        return
+      }
+    } else if (!mesaPedido || mesaPedido === 0) {
       toast.error('Ingresa un número de mesa válido')
       return
     }
+    setEnviando(true)
     try {
       if (esEdicion) {
         await actualizarPedido()
@@ -291,13 +347,23 @@ const TomarPedido = () => {
       }
     } catch (error) {
       toast.error(error.message)
+    } finally {
+      setEnviando(false)
     }
   }
 
   const confirmarValido =
+    !enviando &&
     pedido.length > 0 &&
     (esDomicilio
-      ? nombreDomicilio && nombreDomicilio !== '' && nombreDomicilio !== '.'
+      ? (() => {
+          const n = (nombreDomicilio ?? '').trim()
+          if (!n) return false
+          if (n.length < NOMBRE_MIN || n.length > NOMBRE_MAX) return false
+          if (CARACTERES_INVALIDOS.test(n)) return false
+          if ((celCliente ?? '').trim() && !CEL_REGEX.test(celCliente.trim())) return false
+          return true
+        })()
       : mesaPedido && mesaPedido !== 0)
 
   return (
@@ -328,18 +394,34 @@ const TomarPedido = () => {
                   value={nombreDomicilio ?? ''}
                   onChange={cambiarDomi}
                   placeholder="Ingrese el nombre del cliente"
-                  disabled={esEdicion}
+                  aria-invalid={Boolean(errores.nombre)}
+                  aria-describedby={errores.nombre ? 'nombreDomi-error' : undefined}
                 />
+                {errores.nombre && (
+                  <p id="nombreDomi-error" role="alert" className="text-sm text-destructive">
+                    {errores.nombre}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Letras, números, espacios, apóstrofes y guiones ({NOMBRE_MIN}-{NOMBRE_MAX} caracteres).
+                </p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="celCliente">Celular</Label>
+                <Label htmlFor="celCliente">Celular (opcional)</Label>
                 <Input
                   id="celCliente"
-                  type="text"
+                  type="tel"
                   value={celCliente ?? ''}
-                  onChange={(e) => setCelCliente(e.target.value)}
-                  placeholder="Cel"
+                  onChange={cambiarCel}
+                  placeholder="3001234567"
+                  aria-invalid={Boolean(errores.celular)}
+                  aria-describedby={errores.celular ? 'celCliente-error' : undefined}
                 />
+                {errores.celular && (
+                  <p id="celCliente-error" role="alert" className="text-sm text-destructive">
+                    {errores.celular}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -392,9 +474,13 @@ const TomarPedido = () => {
               <span>Anular pedido</span>
             </Button>
           )}
-          <Button onClick={confirmar} disabled={!confirmarValido}>
-            <Receipt className="h-5 w-5" aria-hidden="true" />
-            <span>{esEdicion ? 'Actualizar pedido' : 'Confirmar pedido'}</span>
+          <Button onClick={confirmar} disabled={!confirmarValido} aria-busy={enviando}>
+            {enviando ? (
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Receipt className="h-5 w-5" aria-hidden="true" />
+            )}
+            <span>{enviando ? 'Enviando…' : esEdicion ? 'Actualizar pedido' : 'Confirmar pedido'}</span>
           </Button>
         </div>
       </div>
