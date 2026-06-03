@@ -4,6 +4,7 @@ import { ArchiveX } from 'lucide-react'
 import { apiRequest } from '../services/api'
 import BotonPedido from '../components/boton_pedido'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const Anulados = () => {
   const [pedidos, setPedidos] = useState([])
@@ -53,15 +54,17 @@ const Anulados = () => {
           <CardTitle className="text-base">Listado</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-[60vh] overflow-y-auto p-6">
-            {items.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No existen pedidos anulados
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">{items}</div>
-            )}
-          </div>
+          <ScrollArea className="h-[60vh]">
+            <div className="flex flex-col gap-2 p-6">
+              {items.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No existen pedidos anulados
+                </p>
+              ) : (
+                items
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </section>

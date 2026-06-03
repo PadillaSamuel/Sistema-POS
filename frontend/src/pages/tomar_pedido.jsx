@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
 import { jwtDecode } from 'jwt-decode'
-import { useNavigate, useParams } from 'react-router-dom'
-import {
-  Eye,
-  Plus,
-  Receipt,
-  Search,
-  Trash2,
-  User,
-} from 'lucide-react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Plus, Receipt, Search, ShoppingBag, Trash2, User } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
@@ -20,20 +13,27 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+
+const CARACTERES_INVALIDOS = /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s'-]/g
+
+const limpiarNombre = (val) => (val || '').replace(CARACTERES_INVALIDOS, '')
 
 const ROL = () => localStorage.getItem('rol') || ''
 
 const TomarPedido = () => {
   const { id, mesa, domi } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const rol = ROL()
+
+  const stateDomi = location.state || {}
 
   const token = localStorage.getItem('token')
   let mesero = ''
@@ -53,10 +53,15 @@ const TomarPedido = () => {
   const [mesaPedido, setMesaPedido] = useState(
     esEdicion ? (mesa === 0 ? undefined : mesa) : null
   )
-  const [nombreDomicilio, setNombreDomicilio] = useState(esEdicion ? domi : null)
-  const [celCliente, setCelCliente] = useState(null)
+  const [nombreDomicilio, setNombreDomicilio] = useState(() => {
+    if (esEdicion) return domi
+    return stateDomi.nombreDomicilio ?? null
+  })
+  const [celCliente, setCelCliente] = useState(() => {
+    if (esEdicion) return null
+    return stateDomi.celCliente ?? null
+  })
   const [busquedaAbierta, setBusquedaAbierta] = useState(false)
-  const [detalleAbierto, setDetalleAbierto] = useState(false)
 
   useEffect(() => {
     if (!esEdicion) return
@@ -148,9 +153,11 @@ const TomarPedido = () => {
   }
 
   const cambiarDomi = (e) => {
-    const v = e.target.value
-    if (v === '.') toast.error('Carácter inválido')
-    setNombreDomicilio(v)
+    const limpio = limpiarNombre(e.target.value)
+    if (limpio !== e.target.value) {
+      toast.error('No se permiten caracteres especiales')
+    }
+    setNombreDomicilio(limpio)
   }
 
   const productosCuerpo = () =>
@@ -352,22 +359,26 @@ const TomarPedido = () => {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          {pedido.length} {pedido.length === 1 ? 'producto' : 'productos'} ·{' '}
-          <span className="font-semibold text-foreground">{formateador.format(total)}</span>
-        </p>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDetalleAbierto(true)} disabled={pedido.length === 0}>
-            <Eye className="h-5 w-5" aria-hidden="true" />
-            <span>Ver pedido</span>
-          </Button>
+      <Card className="flex-1">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base">Productos del pedido</CardTitle>
           <Button onClick={() => setBusquedaAbierta(true)}>
             <Plus className="h-5 w-5" aria-hidden="true" />
             <span>Añadir producto</span>
           </Button>
-        </div>
-      </div>
+        </CardHeader>
+        <CardContent>
+          {pedido.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Aún no has añadido productos.
+            </p>
+          ) : (
+            <ScrollArea className="h-[40vh] pr-3">
+              <div className="flex flex-col gap-2">{productosCuerpo()}</div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
         <div className="flex flex-col leading-tight">
@@ -443,42 +454,6 @@ const TomarPedido = () => {
               </ul>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={detalleAbierto} onOpenChange={setDetalleAbierto}>
-        <DialogContent className="max-h-[85vh] max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalle del pedido</DialogTitle>
-            <DialogDescription>
-              {pedido.length} {pedido.length === 1 ? 'producto' : 'productos'} ·{' '}
-              {formateador.format(total)}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[55vh] overflow-y-auto">
-            {pedido.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                Aún no has añadido productos.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">{productosCuerpo()}</div>
-            )}
-          </div>
-          <DialogFooter className="items-center sm:justify-between">
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Total</span>
-              <span className="text-xl font-bold tabular-nums">{formateador.format(total)}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setDetalleAbierto(false)}>
-                Cerrar
-              </Button>
-              <Button onClick={confirmar} disabled={!confirmarValido}>
-                <Receipt className="h-5 w-5" aria-hidden="true" />
-                <span>{esEdicion ? 'Actualizar pedido' : 'Confirmar pedido'}</span>
-              </Button>
-            </div>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>
