@@ -39,13 +39,9 @@ services:
     build:
       context: ./frontend
       args:
-<<<<<<< HEAD
-        - VITE_API_URL=http://192.168.0.60:8080
-=======
         - VITE_API_URL=${VITE_API_URL}
         - VITE_IMPRESORA_COCINA=${VITE_IMPRESORA_COCINA}
         - VITE_IMPRESORA_FACTURA=${VITE_IMPRESORA_FACTURA}
->>>>>>> ad854fa4bc7df26fb180284da68733ba247469c9
     container_name: frontend-pedidos
     restart: always
     ports:
