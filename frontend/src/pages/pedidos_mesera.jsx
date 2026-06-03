@@ -1,74 +1,76 @@
-import './pedidos_mesera.css'
-import BotonPedido from '../components/boton_pedido'
-import volver from '../assets/flecha.png'
-import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '../services/api'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Receipt } from 'lucide-react'
+
+import { apiRequest } from '../services/api'
+import BotonPedido from '../components/boton_pedido'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const PedidoMesera = () => {
-    const navigate = useNavigate()
-    const [pedidos, setPedidos] = useState([])
+  const navigate = useNavigate()
+  const [pedidos, setPedidos] = useState([])
 
-    const traerPedidos = async () => {
-        return apiRequest("/api/pedidos/listar", {
-            metodo: "GET"
-        })
+  const traerPedidos = () => apiRequest('/api/pedidos/listar', { metodo: 'GET' })
+
+  useEffect(() => {
+    const mostrar = async () => {
+      const tmp = await traerPedidos()
+      setPedidos(tmp)
     }
+    mostrar()
+    const intervalo = setInterval(async () => {
+      const res = await traerPedidos()
+      setPedidos(res)
+    }, 10000)
+    return () => clearInterval(intervalo)
+  }, [])
 
-    useEffect(() => {
-        const mostrarPedidos = async () => {
-            const tmp = await traerPedidos()
-            setPedidos(tmp)
-        }
-        mostrarPedidos()
+  const items = pedidos
+    .filter((p) => p.numeroMesa !== 0)
+    .map((p) => (
+      <BotonPedido
+        key={p.id}
+        num_mesa={p.numeroMesa}
+        num_pedido={p.id}
+        ruta={`/tomar-pedido/${p.id}/${p.numeroMesa}`}
+      />
+    ))
 
-        const intervalo = setInterval(async () => {
-            const res = await traerPedidos()
-            setPedidos(res)
-        }, 10000);
+  return (
+    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary"
+            aria-hidden="true"
+          >
+            <Receipt className="h-5 w-5" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Mis pedidos</h1>
+        </div>
+        <Button onClick={() => navigate('/tomar-pedido')}>
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          <span>Nuevo pedido</span>
+        </Button>
+      </header>
 
-        return () => clearInterval(intervalo)
-    }, [])
-
-
-    return (
-        <>
-            <section className='pedido-mesera-sec'>
-                <div className='pedido-mesera-head'>
-                    <button className='boton-arrow' onClick={() => navigate("/")}>
-                        <img src={volver} alt="" />
-                    </button>
-                    <button className='boton-nuevo-pedido' onClick={() => {
-                        navigate("/tomar-pedido")
-                    }}>
-                        + Nuevo pedido
-                    </button>
-
-                    
-                </div>
-
-
-                <div className='pedido-mesera-pedidos'>
-                    <h3 className='title-pedido'>Pedidos</h3>
-                    <div>
-                        {pedidos != null && pedidos.length > 0 ? (
-                            pedidos.map(p => (
-                                p.numeroMesa !== 0 && (
-                                    <BotonPedido key={p.id} num_mesa={p.numeroMesa} num_pedido={p.id} ruta={`/tomar-pedido/${p.id}/${p.numeroMesa}`} />
-                                )
-                            ))
-                        ) : (
-                            <p>No hay pedidos en curso</p>
-                        )
-
-                        }
-
-                    </div>
-
-                </div>
-            </section>
-        </>
-    )
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pedidos en mesa</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {items.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No hay pedidos en curso
+            </p>
+          ) : (
+            items
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  )
 }
 
 export default PedidoMesera
