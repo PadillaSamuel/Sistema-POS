@@ -7,6 +7,7 @@ import { formateador } from '../lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -84,7 +85,8 @@ const BuscarProducto = () => {
 
       <Card>
         <CardContent className="p-0">
-          <Table containerClassName="max-h-[60vh]">
+          <ScrollArea className="h-[60vh]">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-20 text-center">ID</TableHead>
@@ -143,6 +145,7 @@ const BuscarProducto = () => {
               )}
             </TableBody>
           </Table>
+          </ScrollArea>
         </CardContent>
       </Card>
     </section>
