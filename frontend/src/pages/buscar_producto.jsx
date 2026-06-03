@@ -1,78 +1,151 @@
-import './buscar_producto.css'
-import FilaProducto from '../components/fila_producto'
-import MenuBuscar from '../components/menu_buscar'
 import { useEffect, useState } from 'react'
-import { apiRequest } from '../services/api'
-import { formateador } from './ver_ventas';
-import arrow from '../assets/flecha.png'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Pencil, Search, Trash2 } from 'lucide-react'
 
+import { apiRequest } from '../services/api'
+import { formateador } from './ver_ventas'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
+const BuscarProducto = () => {
+  const navigate = useNavigate()
+  const [dato, setDato] = useState('')
+  const [pizzas, setPizzas] = useState([])
 
-const BuscarProducto = ({ n }) => {
-    const [dato, setDato] = useState("")
-    const [pizzas, setPizzas] = useState([])
-    const filtrar = (e) => {
-        setDato(e.target.value)
+  useEffect(() => {
+    if (dato === '') {
+      setPizzas([])
+      return
     }
-    const navigate = useNavigate();
-
-    const filtrarProducto = async () => {
-        return apiRequest(`/api/producto/listar/${dato}`, {
-            metodo: "GET"
+    let cancelado = false
+    const traer = async () => {
+      try {
+        const tmp = await apiRequest(`/api/producto/listar/${dato}`, {
+          metodo: 'GET',
         })
+        if (!cancelado) setPizzas(Array.isArray(tmp) ? tmp : [])
+      } catch {
+        if (!cancelado) setPizzas([])
+      }
     }
+    traer()
+    return () => {
+      cancelado = true
+    }
+  }, [dato])
 
-    useEffect(() => {
-        const tmpfunc = async () => {
-            if (dato != "") {
-                const tmp = await filtrarProducto()
-                setPizzas(tmp)
-            }
+  return (
+    <section className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">
+      <header className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/gestion-productos')}
+          aria-label="Volver a gestión de productos"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+        </Button>
+        <h1 className="text-2xl font-bold tracking-tight">Buscar producto</h1>
+      </header>
 
-        }
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Filtro de búsqueda</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              type="text"
+              name="buscador"
+              value={dato}
+              onChange={(e) => setDato(e.target.value)}
+              placeholder="Ingrese un nombre o parte del nombre"
+              className="pl-10"
+              autoComplete="off"
+              aria-label="Buscar producto"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-        tmpfunc()
-    },
-
-        [dato])
-
-
-    return (
-        <>
-            <section className='buscar-producto-section'>
-                <div className='title-buscar-producto'>
-                    <button onClick={() => navigate('/gestion-productos')}><img src={arrow} alt="" /></button>
-                    <h2>Buscar Producto</h2>
-                </div>
-
-                <form onChange={filtrar}>
-                    <input type="text" placeholder='Ingrese un producto' name='buscador' className='input-buscar-producto' />
-                </form>
-
-                <div className='busqueda-div'>
-                    <FilaProducto campoUno="ID" campoDos="Nombre" campoTres="Precio" campoCuatro="Gestionar" />
-                    <div className='filas-productos'>
-
-                        {
-                            pizzas != null ? (
-                                pizzas.map((p, index) => (
-                                    <FilaProducto key={index} campoUno={p.id} campoDos={p.nombreProducto.charAt(0).toUpperCase() + p.nombreProducto.slice(1)} campoTres={formateador.format(p.precio)} campoCuatro={<MenuBuscar id={p.id} nombre={p.nombreProducto} precio={p.precio} />} />
-                                ))
-                            ) : (
-                                <p>No hay productos que coincidan con la busqueda</p>
-                            )
-
-
-
-
-
-                        }
-                    </div>
-                </div>
-            </section>
-        </>
-    )
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-20">ID</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead className="w-32 text-right">Precio</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dato === '' ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    Escribe en el buscador para listar productos.
+                  </TableCell>
+                </TableRow>
+              ) : pizzas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    No hay productos que coincidan con la búsqueda.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pizzas.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                    <TableCell>
+                      {p.nombreProducto.charAt(0).toUpperCase() + p.nombreProducto.slice(1)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formateador.format(p.precio)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            navigate(`/editar-producto/${p.id}/${p.nombreProducto}/${p.precio}`)
+                          }
+                          aria-label={`Editar ${p.nombreProducto}`}
+                        >
+                          <Pencil className="h-5 w-5" aria-hidden="true" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Eliminar ${p.nombreProducto}`}
+                          disabled
+                        >
+                          <Trash2 className="h-5 w-5" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </section>
+  )
 }
 
 export default BuscarProducto
