@@ -76,14 +76,16 @@ const Pedidos = () => {
         <CardHeader>
           <CardTitle className="text-base">Listado</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No hay pedidos en curso
-            </p>
-          ) : (
-            items
-          )}
+        <CardContent className="p-0">
+          <div className="max-h-[60vh] overflow-y-auto p-6">
+            {items.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No hay pedidos en curso
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">{items}</div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </section>

@@ -9,7 +9,9 @@ import {
   List,
   LogOut,
   Menu,
+  Pencil,
   Pizza,
+  Plus,
   PlusCircle,
   Printer,
   Receipt,
@@ -47,10 +49,17 @@ const NAV_POR_ROL = {
       subItems: [
         { titulo: 'Ver pedidos', icono: List, ruta: '/pedidos' },
         { titulo: 'Ver anulados', icono: XCircle, ruta: '/ver-anulados' },
+        { titulo: 'Tomar pedido', icono: ClipboardList, ruta: '/tomar-pedido' },
       ],
     },
-    { titulo: 'Domicilios', icono: Bike, ruta: '/gestionar-domis' },
-    { titulo: 'Tomar pedido', icono: ClipboardList, ruta: '/tomar-pedido' },
+    {
+      titulo: 'Domicilios',
+      icono: Bike,
+      subItems: [
+        { titulo: 'Crear domicilio', icono: Plus, ruta: '/tomar-pedido/true' },
+        { titulo: 'Editar domicilios', icono: Pencil, ruta: '/pedidos/true' },
+      ],
+    },
   ],
   ROLE_MESERA: [
     { titulo: 'Mis pedidos', icono: Receipt, ruta: '/mesera' },

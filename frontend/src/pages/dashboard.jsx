@@ -1,4 +1,5 @@
-import { useOutletContext } from 'react-router-dom'
+import {leerUsuario} from '../layouts/authenticated_layout'
+import { useMemo } from 'react'
 import { Pizza } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +10,7 @@ const ETIQUETA_ROL = {
 }
 
 const Dashboard = () => {
-  const { usuario } = useOutletContext() || {}
+  const usuario = useMemo(() => leerUsuario(), [])
   const nombre = usuario?.nombre || 'usuario'
   const rol = ETIQUETA_ROL[usuario?.rol] || 'Invitado'
 

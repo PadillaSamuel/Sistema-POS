@@ -5,7 +5,7 @@ import { toast } from 'react-toastify'
 
 import Sidebar from '@/components/sidebar'
 
-const leerUsuario = () => {
+export const leerUsuario = () => {
   const token = localStorage.getItem('token')
   const rol = localStorage.getItem('rol') || ''
   const nombreGuardado = localStorage.getItem('nombreUsuario') || ''

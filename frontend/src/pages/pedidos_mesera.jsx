@@ -38,7 +38,7 @@ const PedidoMesera = () => {
     ))
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6 mt-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
