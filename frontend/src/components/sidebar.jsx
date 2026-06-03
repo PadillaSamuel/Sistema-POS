@@ -5,6 +5,7 @@ import {
   Bike,
   ChevronDown,
   ClipboardList,
+  History,
   List,
   LogOut,
   Menu,
@@ -24,7 +25,14 @@ import { cn } from '@/lib/utils'
 
 const NAV_POR_ROL = {
   ROLE_CAJA: [
-    { titulo: 'Ventas', icono: BarChart3, ruta: '/ver-ventas' },
+    {
+      titulo: 'Ventas',
+      icono: BarChart3,
+      subItems: [
+        { titulo: 'Historial', icono: History, ruta: '/historial' },
+        { titulo: 'Métricas', icono: BarChart3, ruta: '/metricas' },
+      ],
+    },
     {
       titulo: 'Productos',
       icono: Pizza,

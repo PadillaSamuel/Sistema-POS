@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './fila_tomar_pedido.css'
-import { formateador } from '../pages/ver_ventas';
+import { formateador } from '../lib/format';
 
 
 

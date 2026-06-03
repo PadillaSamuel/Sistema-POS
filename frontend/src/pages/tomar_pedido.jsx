@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { apiRequest } from '../services/api'
 import { useNavigate, useParams } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
-import { formateador } from './ver_ventas'
+import { formateador } from '../lib/format'
 import { toast } from 'react-toastify';
 const TomarPedido = () => {
 

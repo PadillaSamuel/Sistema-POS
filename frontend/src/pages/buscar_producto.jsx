@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil, Search, Trash2 } from 'lucide-react'
 
 import { apiRequest } from '../services/api'
-import { formateador } from './ver_ventas'
+import { formateador } from '../lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

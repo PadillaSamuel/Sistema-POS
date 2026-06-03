@@ -14,7 +14,8 @@ import PedidoMesera from "./pages/pedidos_mesera";
 import Pedidos from "./pages/pedidos";
 import TomarPedido from "./pages/tomar_pedido";
 import VerPedido from "./pages/ver_pedido";
-import VerVentas from "./pages/ver_ventas";
+import Historial from "./pages/historial";
+import Metricas from "./pages/metricas";
 import Anulados from "./pages/anulados";
 
 const App = () => {
@@ -33,7 +34,8 @@ const App = () => {
                 path="/editar-producto/:id/:nombre/:precio"
                 element={<CrearProducto />}
               />
-              <Route path="/ver-ventas" element={<VerVentas />} />
+              <Route path="/historial" element={<Historial />} />
+              <Route path="/metricas" element={<Metricas />} />
               <Route path="/gestionar-domis" element={<GestionDomis />} />
               <Route path="/ver-anulados" element={<Anulados />} />
             </Route>
