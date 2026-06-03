@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, Loader2, Printer, Search } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Pie, PieChart } from 'recharts'
 import { toast } from 'react-toastify'
 
@@ -9,17 +10,42 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { DatePicker } from '@/components/ui/date-picker'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { addDays, format } from 'date-fns'
 
 const COLORS = {
   EFECTIVO: 'hsl(130 70% 45%)',
   TRANSFERENCIA: 'hsl(217 91% 60%)',
   DATAFONO: 'hsl(280 65% 60%)',
+}
+
+const COLOR_CANTIDAD = 'hsl(130 70% 45%)'
+
+const MESES = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+]
+
+// En el backend (PedidoServiceImpl) se usa metodoPago.ordinal():
+// 0 = EFECTIVO, 1 = TRANSFERENCIA, 2 = DATAFONO.
+const METODOS_POR_ORDINAL = ['EFECTIVO', 'TRANSFERENCIA', 'DATAFONO']
+
+const configPagos = {
+  EFECTIVO: { label: 'Efectivo', color: COLORS.EFECTIVO },
+  TRANSFERENCIA: { label: 'Transferencia', color: COLORS.TRANSFERENCIA },
+  DATAFONO: { label: 'Datáfono', color: COLORS.DATAFONO },
+}
+
+const configCantidad = {
+  cantidad: { label: 'Pedidos', color: COLOR_CANTIDAD },
 }
 
 const aIso = (fecha) => (fecha ? format(fecha, 'yyyy-MM-dd') : '')
@@ -35,6 +61,11 @@ const Metricas = () => {
   const [pedidos, setPedidos] = useState([])
   const [cargando, setCargando] = useState(false)
   const [imprimiendoCierre, setImprimiendoCierre] = useState(false)
+
+  const anhoPorDefecto = useMemo(() => new Date().getFullYear(), [])
+  const [anho, setAnho] = useState(anhoPorDefecto)
+  const [metricaAnual, setMetricaAnual] = useState(null)
+  const [cargandoAnual, setCargandoAnual] = useState(false)
 
   const traer = async (inicio, fin) => {
     try {
@@ -104,6 +135,48 @@ const Metricas = () => {
       setImprimiendoCierre(false)
     }
   }
+
+  const cargarAnual = async () => {
+    if (cargandoAnual) return
+    setCargandoAnual(true)
+    try {
+      const res = await apiRequest(`/api/metricas/anhos/${anho}`, { metodo: 'GET' })
+      setMetricaAnual(res)
+    } catch (err) {
+      const msj = String(err?.message || err)
+      if (msj.includes('404')) {
+        setMetricaAnual(null)
+        toast.info(`No hay métricas para el año ${anho}`)
+      } else {
+        toast.error(msj)
+      }
+    } finally {
+      setCargandoAnual(false)
+    }
+  }
+
+  const dataCantidad = useMemo(
+    () =>
+      MESES.map((nombre, i) => ({
+        mes: nombre,
+        cantidad: metricaAnual?.pedidosMeses?.[i + 1] ?? 0,
+      })),
+    [metricaAnual]
+  )
+
+  const dataPagos = useMemo(
+    () =>
+      MESES.map((nombre, i) => {
+        const inner = metricaAnual?.pagosMeses?.[i + 1] || {}
+        return {
+          mes: nombre,
+          EFECTIVO: inner[0] ?? 0,
+          TRANSFERENCIA: inner[1] ?? 0,
+          DATAFONO: inner[2] ?? 0,
+        }
+      }),
+    [metricaAnual]
+  )
 
   const totalesPorMetodo = useMemo(() => {
     const totales = { EFECTIVO: 0, TRANSFERENCIA: 0, DATAFONO: 0 }
@@ -299,6 +372,138 @@ const Metricas = () => {
             <span>{imprimiendoCierre ? 'Imprimiendo…' : 'Imprimir cierre de día'}</span>
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Métricas anuales</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[60vh]">
+            <div className="flex flex-col gap-6 p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex flex-col gap-1.5 sm:w-40">
+                  <Label htmlFor="metrica-anho">Año</Label>
+                  <Input
+                    id="metrica-anho"
+                    type="number"
+                    inputMode="numeric"
+                    min="2000"
+                    max="2100"
+                    value={anho}
+                    onChange={(e) =>
+                      setAnho(Number(e.target.value) || anhoPorDefecto)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') cargarAnual()
+                    }}
+                  />
+                </div>
+                <Button
+                  onClick={cargarAnual}
+                  disabled={cargandoAnual}
+                  aria-busy={cargandoAnual}
+                >
+                  {cargandoAnual ? (
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <BarChart3 className="h-5 w-5" aria-hidden="true" />
+                  )}
+                  <span>{cargandoAnual ? 'Cargando…' : 'Aplicar'}</span>
+                </Button>
+              </div>
+
+              {!cargandoAnual && metricaAnual === null && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Sin datos para mostrar. Selecciona un año y pulsa Aplicar.
+                </p>
+              )}
+
+              {metricaAnual && (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-sm font-semibold">Cantidad de pedidos por mes</h3>
+                    <ChartContainer
+                      config={configCantidad}
+                      className="h-[260px] w-full"
+                    >
+                      <BarChart data={dataCantidad}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                          dataKey="mes"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel nameKey="mes" />}
+                        />
+                        <Bar
+                          dataKey="cantidad"
+                          fill={COLOR_CANTIDAD}
+                          radius={4}
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-sm font-semibold">
+                      Monto de pagos por método (apilado)
+                    </h3>
+                    <ChartContainer
+                      config={configPagos}
+                      className="h-[280px] w-full"
+                    >
+                      <BarChart data={dataPagos}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                          dataKey="mes"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => formateador.format(v)}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel nameKey="mes" />}
+                          formatter={(v) => formateador.format(v)}
+                        />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Bar
+                          dataKey="EFECTIVO"
+                          stackId="pagos"
+                          fill={COLORS.EFECTIVO}
+                        />
+                        <Bar
+                          dataKey="TRANSFERENCIA"
+                          stackId="pagos"
+                          fill={COLORS.TRANSFERENCIA}
+                        />
+                        <Bar
+                          dataKey="DATAFONO"
+                          stackId="pagos"
+                          fill={COLORS.DATAFONO}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
       </Card>
     </section>
   )
