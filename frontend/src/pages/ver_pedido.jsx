@@ -156,6 +156,11 @@ const VerPedido = () => {
           <p className="text-sm text-muted-foreground">
             {domi !== undefined ? `Domicilio: ${domi}` : `Mesa N.${mesa}`}
           </p>
+  {celular && celular !== "undefined" && (
+  <p className="text-sm text-muted-foreground">
+    Celular: {celular}
+  </p>
+)}
         </header>
 
         <Card>

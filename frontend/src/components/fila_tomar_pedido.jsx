@@ -54,7 +54,6 @@ const FilaTomarPedido = ({
             aria-label={`${nombre_producto}, agregar detalle`}
           >
             <span className="truncate">{nombre_producto}</span>
-            <MoreHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-72" align="start">

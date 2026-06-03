@@ -369,7 +369,7 @@ const TomarPedido = () => {
   return (
     <section className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 p-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight mt-8">
           {esEdicion ? `Editar pedido ${id}` : 'Nuevo pedido'}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -402,9 +402,7 @@ const TomarPedido = () => {
                     {errores.nombre}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Letras, números, espacios, apóstrofes y guiones ({NOMBRE_MIN}-{NOMBRE_MAX} caracteres).
-                </p>
+                
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="celCliente">Celular (opcional)</Label>

@@ -359,7 +359,7 @@ const Metricas = () => {
             </span>
           </div>
           <Button
-            variant="outline"
+            variant="default"
             onClick={imprimirCierre}
             disabled={imprimiendoCierre}
             aria-busy={imprimiendoCierre}
