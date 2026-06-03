@@ -3,6 +3,7 @@ package com.artesanos.sistema_pedidos.controllers;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.artesanos.sistema_pedidos.dtos.MetricaDTO;
+import com.artesanos.sistema_pedidos.enums.EstadoPedido;
 import com.artesanos.sistema_pedidos.services.PedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,15 +40,16 @@ public class MetricaController {
     @Operation(summary = "Obtener métricas por año recibido")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
     @GetMapping("/anhos/{anho}")
-    public ResponseEntity<Optional<MetricaDTO>> meetricasAnho(@PathVariable Integer anho) {
+    public ResponseEntity<MetricaDTO> metricasAnho(@PathVariable Integer anho) {
         LocalDateTime inicioAnho = LocalDateTime.of(anho, 1, 1, 0, 0, 0);
         LocalDateTime finAnho = LocalDateTime.of(anho + 1, 1, 1, 0, 0, 0);
 
-        Optional<MetricaDTO> metricas = pedidoService.findMetricasPedidosAnho(inicioAnho, finAnho, "RESUELTO");
+        Optional<MetricaDTO> metricas = pedidoService.findMetricasPedidosAnho(
+                inicioAnho, finAnho, EstadoPedido.RESUELTO);
         if (metricas.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok().body(metricas);
+        return ResponseEntity.ok(metricas.get());
     }
 
 }

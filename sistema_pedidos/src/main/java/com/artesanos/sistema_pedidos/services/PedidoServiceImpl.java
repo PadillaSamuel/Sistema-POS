@@ -316,7 +316,7 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado) {
+    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, EstadoPedido estado) {
         List<Pedido> pedidos = pedidoRepository.findPedidosDelAnio(inicio, fin, estado);
         if (pedidos.isEmpty()) {
             return Optional.empty();

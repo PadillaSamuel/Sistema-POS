@@ -10,6 +10,7 @@ import com.artesanos.sistema_pedidos.dtos.PedidoBodyDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoDto;
 import com.artesanos.sistema_pedidos.dtos.PedidoPagoDto;
 import com.artesanos.sistema_pedidos.entities.Pedido;
+import com.artesanos.sistema_pedidos.enums.EstadoPedido;
 
 public interface PedidoService {
     public List<PedidoDto> listarPedidos();
@@ -32,5 +33,5 @@ public interface PedidoService {
 
     public List<PedidoPagoDto> findPedidosConPagosByFecha(LocalDateTime inicio, LocalDateTime fin, String estado);
 
-    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, String estado);
+    public Optional<MetricaDTO> findMetricasPedidosAnho(LocalDateTime inicio, LocalDateTime fin, EstadoPedido estado);
 }

@@ -64,6 +64,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             """)
     List<Pedido> findByFechaPedidoBetweenWithPagos(LocalDateTime inicio, LocalDateTime fin, EstadoPedido estadoPedido);
 
-    @Query("SELECT p FROM Pedido p WHERE p.fechaPedido BETWEEN ?1 AND ?2and p.estadoPedido = ?3")
-    List<Pedido> findPedidosDelAnio(LocalDateTime inicio, LocalDateTime fin, String estado);
+    @Query("SELECT p FROM Pedido p WHERE p.fechaPedido BETWEEN ?1 AND ?2 AND p.estadoPedido = ?3")
+    List<Pedido> findPedidosDelAnio(LocalDateTime inicio, LocalDateTime fin, EstadoPedido estado);
 }
