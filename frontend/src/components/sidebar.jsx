@@ -47,7 +47,6 @@ const NAV_POR_ROL = {
   ],
   ROLE_MESERA: [
     { titulo: 'Mis pedidos', icono: Receipt, ruta: '/mesera' },
-    { titulo: 'Tomar pedido', icono: ClipboardList, ruta: '/tomar-pedido' },
   ],
 }
 
@@ -95,10 +94,10 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
             )}
             aria-label={`${item.titulo}, sección desplegable`}
           >
-            <Icono className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Icono className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="flex-1 text-left">{item.titulo}</span>
             <ChevronDown
-              className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+              className="h-5 w-5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
               aria-hidden="true"
             />
           </CollapsibleTrigger>
@@ -122,7 +121,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
                         )
                       }
                     >
-                      <IconoSub className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <IconoSub className="h-5 w-5 shrink-0" aria-hidden="true" />
                       <span>{sub.titulo}</span>
                     </NavLink>
                   </li>
@@ -149,7 +148,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
           )
         }
       >
-        <Icono className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <Icono className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span>{item.titulo}</span>
       </NavLink>
     )
@@ -160,10 +159,10 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-4">
         <div className="flex items-center gap-2">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
+            className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground"
             aria-hidden="true"
           >
-            <Pizza className="h-5 w-5" />
+            <Pizza className="h-6 w-6" />
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-semibold">Artesanos</span>
@@ -177,7 +176,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
           onClick={() => setAbierto(false)}
           aria-label="Cerrar menú"
         >
-          <X className="h-5 w-5" aria-hidden="true" />
+          <X className="h-6 w-6" aria-hidden="true" />
         </Button>
       </div>
 
@@ -203,7 +202,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
           className="w-full justify-center"
           onClick={manejarLogout}
         >
-          <LogOut className="h-4 w-4" aria-hidden="true" />
+          <LogOut className="h-5 w-5" aria-hidden="true" />
           <span>Cerrar sesión</span>
         </Button>
       </div>
@@ -221,7 +220,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
         aria-expanded={abierto}
         aria-controls="sidebar-panel"
       >
-        <Menu className="h-5 w-5" aria-hidden="true" />
+        <Menu className="h-6 w-6" aria-hidden="true" />
       </Button>
 
       {abierto && (

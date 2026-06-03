@@ -31,21 +31,6 @@ const AuthenticatedLayout = () => {
   const navigate = useNavigate()
   const usuario = useMemo(() => leerUsuario(), [])
 
-  if (!usuario.token) {
-    return (
-      <main id="main-content" className="flex min-h-screen w-full items-center justify-center">
-        <p role="alert" className="text-sm text-muted-foreground">
-          Redirigiendo a inicio de sesión…
-        </p>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: 'window.location.replace("/");',
-          }}
-        />
-      </main>
-    )
-  }
-
   const cerrarSesion = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('rol')
