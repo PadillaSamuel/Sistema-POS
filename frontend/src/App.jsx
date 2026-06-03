@@ -9,7 +9,6 @@ import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import BuscarProducto from "./pages/buscar_producto";
 import CrearProducto from "./pages/crear_producto";
-import GestionDomis from "./pages/gestionar_domis";
 import PedidoMesera from "./pages/pedidos_mesera";
 import Pedidos from "./pages/pedidos";
 import TomarPedido from "./pages/tomar_pedido";
@@ -36,7 +35,6 @@ const App = () => {
               />
               <Route path="/historial" element={<Historial />} />
               <Route path="/metricas" element={<Metricas />} />
-              <Route path="/gestionar-domis" element={<GestionDomis />} />
               <Route path="/ver-anulados" element={<Anulados />} />
             </Route>
 
