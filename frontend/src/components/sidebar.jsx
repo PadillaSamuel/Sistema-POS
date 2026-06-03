@@ -29,7 +29,6 @@ const NAV_POR_ROL = {
       titulo: 'Productos',
       icono: Pizza,
       subItems: [
-        { titulo: 'Gestionar', icono: List, ruta: '/gestion-productos' },
         { titulo: 'Buscar', icono: Search, ruta: '/buscar-producto' },
         { titulo: 'Crear producto', icono: PlusCircle, ruta: '/crear-producto' },
       ],

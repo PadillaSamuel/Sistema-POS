@@ -9,7 +9,6 @@ import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import BuscarProducto from "./pages/buscar_producto";
 import CrearProducto from "./pages/crear_producto";
-import GestionProductos from "./pages/gestion_productos";
 import GestionDomis from "./pages/gestionar_domis";
 import PedidoMesera from "./pages/pedidos_mesera";
 import Pedidos from "./pages/pedidos";
@@ -28,7 +27,6 @@ const App = () => {
           <Route element={<AuthenticatedLayout />}>
             <Route element={<RequireRol roles={["ROLE_CAJA"]} />}>
               <Route path="/caja" element={<Dashboard />} />
-              <Route path="/gestion-productos" element={<GestionProductos />} />
               <Route path="/buscar-producto" element={<BuscarProducto />} />
               <Route path="/crear-producto" element={<CrearProducto />} />
               <Route

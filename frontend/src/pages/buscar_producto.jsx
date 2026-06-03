@@ -49,8 +49,8 @@ const BuscarProducto = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/gestion-productos')}
-          aria-label="Volver a gestión de productos"
+          onClick={() => navigate('/caja')}
+          aria-label="Volver"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </Button>

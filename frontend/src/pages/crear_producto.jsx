@@ -30,6 +30,10 @@ const CrearProducto = () => {
     })
   }
 
+  const volverAtras = () => {
+    navigate('/caja')
+  }
+
   const capturarDatos = async (e) => {
     e.preventDefault()
     if (cargando) return
@@ -60,7 +64,7 @@ const CrearProducto = () => {
         await enviarProducto(datos)
         toast.success('¡Producto creado con éxito!')
       }
-      navigate('/gestion-productos')
+      navigate('/caja')
     } catch (error) {
       toast.error(error.message)
     } finally {
@@ -74,8 +78,8 @@ const CrearProducto = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/gestion-productos')}
-          aria-label="Volver a gestión de productos"
+          onClick={volverAtras}
+          aria-label="Volver"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </Button>
