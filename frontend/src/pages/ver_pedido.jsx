@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Ban, Printer, Receipt } from 'lucide-react'
-import { useReactToPrint } from 'react-to-print'
 import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
@@ -52,7 +51,6 @@ const VerPedido = () => {
     TRANSFERENCIA: '',
     DATAFONO: '',
   })
-  const comandaRef = useRef()
   const navigate = useNavigate()
   const esResuelto = estado !== undefined
 
@@ -119,8 +117,6 @@ const VerPedido = () => {
     setPagoMetodos({ EFECTIVO: '', TRANSFERENCIA: '', DATAFONO: '' })
     setModalPagoAbierto(true)
   }
-
-  const imprimir = useReactToPrint({ contentRef: comandaRef })
 
   const imprimirFactura = async (cuerpo) =>
     apiRequest('/api/impresora/factura', { metodo: 'POST', body: cuerpo })
@@ -288,19 +284,6 @@ const VerPedido = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <div ref={comandaRef} className="hidden print:block">
-        <h2>Pedido {id}</h2>
-        <p>{domi !== undefined ? `Domicilio: ${domi}` : `Mesa N.${mesa}`}</p>
-        <ul>
-          {pedido.map((p, i) => (
-            <li key={i}>
-              {p.cantidadProducto} x {p.nombreProducto} = {formateador.format(p.subtotalPedido)}
-            </li>
-          ))}
-        </ul>
-        <p>Total: {formateador.format(total)}</p>
-      </div>
     </>
   )
 }
