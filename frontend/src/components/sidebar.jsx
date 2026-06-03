@@ -56,7 +56,7 @@ const NAV_POR_ROL = {
       titulo: 'Domicilios',
       icono: Bike,
       subItems: [
-        { titulo: 'Crear domicilio', icono: Plus, ruta: '/tomar-pedido/true' },
+        { titulo: 'Crear domicilio', icono: Plus, ruta: '/crear-domicilio' },
         { titulo: 'Editar domicilios', icono: Pencil, ruta: '/pedidos/true' },
       ],
     },

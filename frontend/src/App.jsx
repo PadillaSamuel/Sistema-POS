@@ -9,6 +9,7 @@ import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import BuscarProducto from "./pages/buscar_producto";
 import CrearProducto from "./pages/crear_producto";
+import CrearDomicilio from "./pages/crear_domicilio";
 import PedidoMesera from "./pages/pedidos_mesera";
 import Pedidos from "./pages/pedidos";
 import TomarPedido from "./pages/tomar_pedido";
@@ -36,6 +37,7 @@ const App = () => {
               <Route path="/historial" element={<Historial />} />
               <Route path="/metricas" element={<Metricas />} />
               <Route path="/ver-anulados" element={<Anulados />} />
+              <Route path="/crear-domicilio" element={<CrearDomicilio />} />
             </Route>
 
             <Route element={<RequireRol roles={["ROLE_MESERA"]} />}>
