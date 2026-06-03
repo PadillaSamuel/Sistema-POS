@@ -12,7 +12,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Label } from '@/components/ui/label'
 import { addDays, format } from 'date-fns'
 
 const COLORS = {
@@ -70,7 +71,11 @@ const Metricas = () => {
 
   const aplicar = () => {
     if (!rango?.from || !rango?.to) {
-      toast.error('Selecciona un rango de fechas completo')
+      toast.error('Selecciona ambas fechas (desde y hasta)')
+      return
+    }
+    if (rango.from > rango.to) {
+      toast.error('La fecha "desde" no puede ser mayor que "hasta"')
       return
     }
     setRangoAplicado(rango)
@@ -175,11 +180,25 @@ const Metricas = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <DateRangePicker
-                value={rango}
-                onChange={setRango}
-                placeholder="Selecciona el rango"
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="metricas-desde">Desde</Label>
+              <DatePicker
+                value={rango.from}
+                onChange={(d) => setRango((prev) => ({ ...prev, from: d }))}
+                placeholder="Fecha inicial"
+                ariaLabel="Fecha inicial"
+                toDate={rango.to}
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="metricas-hasta">Hasta</Label>
+              <DatePicker
+                value={rango.to}
+                onChange={(d) => setRango((prev) => ({ ...prev, to: d }))}
+                placeholder="Fecha final"
+                ariaLabel="Fecha final"
+                fromDate={rango.from}
+                toDate={new Date(new Date().setHours(23, 59, 59, 999))}
               />
             </div>
             <Button onClick={aplicar} disabled={cargando} className="sm:w-auto">

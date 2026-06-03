@@ -7,7 +7,8 @@ import { apiRequest } from '../services/api'
 import BotonPedido from '../components/boton_pedido'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { addDays } from 'date-fns'
 
@@ -60,7 +61,11 @@ const Historial = () => {
 
   const aplicar = () => {
     if (!rango?.from || !rango?.to) {
-      toast.error('Selecciona un rango de fechas completo')
+      toast.error('Selecciona ambas fechas (desde y hasta)')
+      return
+    }
+    if (rango.from > rango.to) {
+      toast.error('La fecha "desde" no puede ser mayor que "hasta"')
       return
     }
     setRangoAplicado(rango)
@@ -89,8 +94,26 @@ const Historial = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <DateRangePicker value={rango} onChange={setRango} placeholder="Selecciona el rango" />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="historial-desde">Desde</Label>
+              <DatePicker
+                value={rango.from}
+                onChange={(d) => setRango((prev) => ({ ...prev, from: d }))}
+                placeholder="Fecha inicial"
+                ariaLabel="Fecha inicial"
+                toDate={rango.to}
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="historial-hasta">Hasta</Label>
+              <DatePicker
+                value={rango.to}
+                onChange={(d) => setRango((prev) => ({ ...prev, to: d }))}
+                placeholder="Fecha final"
+                ariaLabel="Fecha final"
+                fromDate={rango.from}
+                toDate={new Date(new Date().setHours(23, 59, 59, 999))}
+              />
             </div>
             <Button onClick={aplicar} disabled={cargando} className="sm:w-auto">
               <Search className="h-5 w-5" aria-hidden="true" />
