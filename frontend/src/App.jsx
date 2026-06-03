@@ -1,54 +1,76 @@
 import "./App.css";
-import { Routes, Route } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+
+import AuthenticatedLayout from "@/layouts/authenticated_layout";
 import Login from "./pages/login";
-import HomeCaja from "./pages/home_caja";
-import GestionarProductos from "./pages/gestion_productos";
-import Pedidos from "./pages/pedidos";
-import FilaProducto from "./components/fila_producto";
+import Dashboard from "./pages/dashboard";
 import BuscarProducto from "./pages/buscar_producto";
-import VerPedido from "./pages/ver_pedido";
-import PedidoMesera from "./pages/pedidos_mesera";
-import TomarPedido from "./pages/tomar_pedido";
-import GestionProductos from "./pages/gestion_productos";
 import CrearProducto from "./pages/crear_producto";
-import VerVentas from "./pages/ver_ventas";
+import GestionProductos from "./pages/gestion_productos";
 import GestionDomis from "./pages/gestionar_domis";
+import PedidoMesera from "./pages/pedidos_mesera";
+import Pedidos from "./pages/pedidos";
+import TomarPedido from "./pages/tomar_pedido";
+import VerPedido from "./pages/ver_pedido";
+import VerVentas from "./pages/ver_ventas";
 import Anulados from "./pages/anulados";
-import { ToastContainer } from 'react-toastify';
-function App() {
+
+const App = () => {
   return (
     <>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/caja" element={<HomeCaja />} />
-        <Route path="/mesera" element={<PedidoMesera />} />
-        <Route path="/gestion-productos" element={<GestionProductos />} />
-        <Route path="/pedidos" element={<Pedidos />} />
-        <Route path="/buscar-producto" element={<BuscarProducto />} />
-        <Route path="/ver-pedido/:id/:mesa/:estado" element={<VerPedido />} />
-        <Route path="/ver-pedido/:id/:mesa" element={<VerPedido />} />
-        <Route path="/tomar-pedido" element={<TomarPedido />} />
-        <Route path="/tomar-pedido/:id/:mesa" element={<TomarPedido />} />
-        <Route path="/crear-producto" element={<CrearProducto />} />
-        <Route
-          path="/editar-producto/:id/:nombre/:precio"
-          element={<CrearProducto />}
-        />
-        <Route path="/ver-ventas" element={<VerVentas />} />
-        
-        <Route path="/tomar-pedido/:domi" element={<TomarPedido />} />
-        <Route path="/tomar-pedido/domi/:id/:domi" element={<TomarPedido />} />
-        <Route path="/gestionar-domis" element={<GestionDomis />} />
-        <Route path="/tomar-pedido/domi/:id/:domi" element={<TomarPedido />}  />
-        <Route path="/ver-pedido/domi/:id/:domi" element={<VerPedido />} />
-        <Route path="/pedidos/:domis" element={<Pedidos />} />
-        <Route path="/ver-pedido-domi/:id/:domi/:estado" element={<VerPedido />} />
-        <Route path="/ver-anulados" element={<Anulados />} />
+
+        <Route element={<AuthenticatedLayout />}>
+          <Route path="/caja" element={<Dashboard />} />
+
+          <Route path="/gestion-productos" element={<GestionProductos />} />
+          <Route path="/buscar-producto" element={<BuscarProducto />} />
+          <Route path="/crear-producto" element={<CrearProducto />} />
+          <Route
+            path="/editar-producto/:id/:nombre/:precio"
+            element={<CrearProducto />}
+          />
+
+          <Route path="/pedidos" element={<Pedidos />} />
+          <Route path="/pedidos/:domis" element={<Pedidos />} />
+          <Route path="/ver-anulados" element={<Anulados />} />
+          <Route path="/ver-ventas" element={<VerVentas />} />
+
+          <Route path="/mesera" element={<PedidoMesera />} />
+          <Route path="/gestionar-domis" element={<GestionDomis />} />
+
+          <Route path="/tomar-pedido" element={<TomarPedido />} />
+          <Route
+            path="/tomar-pedido/:id/:mesa"
+            element={<TomarPedido />}
+          />
+          <Route path="/tomar-pedido/:domi" element={<TomarPedido />} />
+          <Route
+            path="/tomar-pedido/domi/:id/:domi"
+            element={<TomarPedido />}
+          />
+
+          <Route
+            path="/ver-pedido/:id/:mesa/:estado"
+            element={<VerPedido />}
+          />
+          <Route path="/ver-pedido/:id/:mesa" element={<VerPedido />} />
+          <Route
+            path="/ver-pedido/domi/:id/:domi"
+            element={<VerPedido />}
+          />
+          <Route
+            path="/ver-pedido-domi/:id/:domi/:estado"
+            element={<VerPedido />}
+          />
+        </Route>
       </Routes>
 
       <ToastContainer position="bottom-right" autoClose={2500} />
     </>
   );
-}
+};
 
 export default App;

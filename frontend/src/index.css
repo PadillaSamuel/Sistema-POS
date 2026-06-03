@@ -86,8 +86,7 @@
   }
 
   #root {
-    display: grid;
-    place-items: center;
+    display: block;
   }
 }
 
