@@ -1,102 +1,145 @@
-import { useEffect, useState } from 'react'
-import { apiRequest } from '../services/api'
-import './crear_producto.css'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import arrow from '../assets/flecha.png'
-
+import { ArrowLeft, Save } from 'lucide-react'
 import { toast } from 'react-toastify'
+
+import { apiRequest } from '../services/api'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 const CrearProducto = () => {
-    const { id, nombre, precio } = useParams()
-    const navigate=useNavigate();
+  const { id, nombre: nombreParam, precio: precioParam } = useParams()
+  const navigate = useNavigate()
+  const enEdicion = id !== undefined
+  const [cargando, setCargando] = useState(false)
 
+  const enviarProducto = async (cuerpo) => {
+    return apiRequest('/api/producto/crear', {
+      metodo: 'POST',
+      body: cuerpo,
+    })
+  }
 
-    const enviarProducto = async (cuerpo) => {
-        return apiRequest("/api/producto/crear", {
-            metodo: "POST",
-            body: cuerpo
-        })
+  const actualizarProducto = async (cuerpo) => {
+    return apiRequest(`/api/producto/actualizar/${id}`, {
+      metodo: 'PUT',
+      body: cuerpo,
+    })
+  }
+
+  const capturarDatos = async (e) => {
+    e.preventDefault()
+    if (cargando) return
+
+    const form = e.currentTarget
+    const datos = {
+      nombreProducto: form.nombrePizza.value.trim(),
+      precioProducto: form.precioPizza.value.trim(),
+      combinable: form.estado.value,
+      activo: true,
     }
 
-    const actualizarProducto = async (cuerpo) => {
-        return apiRequest(`/api/producto/actualizar/${id}`, {
-            metodo: "PUT",
-            body: cuerpo
-        })
+    if (!datos.nombreProducto) {
+      toast.error('Ingrese el nombre del producto')
+      return
+    }
+    if (!datos.precioProducto || Number.isNaN(Number(datos.precioProducto))) {
+      toast.error('Ingrese un precio válido')
+      return
     }
 
-    const capturarDatos = async (e) => {
-        e.preventDefault();
-        const nombreProducto = e.target.nombrePizza.value;
-        const precioProducto = e.target.precioPizza.value;
-        const combinable = e.target.estado.value;
-
-        const cuerpo = {
-            nombreProducto: nombreProducto,
-            precioProducto: precioProducto,
-            combinable: combinable,
-            activo: true
-        };
-        try {
-        if (id !== undefined) {
-            await actualizarProducto(cuerpo);
-            toast.success("¡Producto actualizado con éxito!");
-            navigate("/gestion-productos");
-        } else {
-            await enviarProducto(cuerpo);
-            toast.success("¡Producto creado con éxito!");
-            navigate("/gestion-productos");
-                }
-    } 
-        catch (error) {
-        toast.error(`${error.message}`);
-            }
-
+    setCargando(true)
+    try {
+      if (enEdicion) {
+        await actualizarProducto(datos)
+        toast.success('¡Producto actualizado con éxito!')
+      } else {
+        await enviarProducto(datos)
+        toast.success('¡Producto creado con éxito!')
+      }
+      navigate('/gestion-productos')
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setCargando(false)
     }
+  }
 
+  return (
+    <section className="mx-auto flex w-full max-w-md flex-col gap-4 p-6">
+      <header className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/gestion-productos')}
+          aria-label="Volver a gestión de productos"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+        </Button>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {enEdicion ? 'Editar producto' : 'Nuevo producto'}
+        </h1>
+      </header>
 
-
-    return (
-        <>
-            <section className='crear-producto-sec'>
-                <div className='div-head-crear-producto'>
-                        <button type='button' className='boton-flecha-crear-producto' onClick={()=>navigate('/gestion-productos')}><img src={arrow} alt="" /></button>
-                        <h1 className='titulo-nuevo-producto'>Nuevo Producto</h1>
-                        </div>
-                <form onSubmit={capturarDatos} className='form-crear-producto'>
-                    
-                    <div className='crear-producto-inputs'>
-                        <label htmlFor="" className='labels-nuevo-producto'>Nombre del producto</label>
-                        {id != undefined ? (
-                            <input type="text" className='inputs' name='nombrePizza' defaultValue={nombre} />
-                        ) : (
-                            <input type="text" className='inputs' name='nombrePizza' />
-                        )
-
-                        }
-                    </div>
-                    <div className='crear-producto-inputs'>
-                        <label htmlFor="" className='labels-nuevo-producto'>Precio del producto</label>
-                        {id != undefined ? (
-                            <input type="text" className='inputs' name='precioPizza' defaultValue={precio} />
-                        ) : (
-                            <input type="text" className='inputs' name='precioPizza' />
-                        )
-
-                        }
-
-                    </div>
-                    <div>
-                        <select name="estado" id="" className='estado'>
-                            <option value="true">Combinable</option>
-                            <option value="false">Completa</option>
-                        </select>
-                    </div>
-                    <button className='boton-guardar-crear-producto'>Guardar</button>
-                </form>
-
-            </section>
-        </>
-    )
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Datos del producto</CardTitle>
+        </CardHeader>
+        <form onSubmit={capturarDatos} noValidate>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="nombrePizza">Nombre del producto</Label>
+              <Input
+                id="nombrePizza"
+                name="nombrePizza"
+                type="text"
+                required
+                defaultValue={nombreParam}
+                placeholder="Ej. Pizza familiar"
+                disabled={cargando}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="precioPizza">Precio del producto</Label>
+              <Input
+                id="precioPizza"
+                name="precioPizza"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
+                required
+                defaultValue={precioParam}
+                placeholder="0"
+                disabled={cargando}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="estado">Tipo</Label>
+              <Select name="estado" defaultValue="true" disabled={cargando}>
+                <SelectTrigger id="estado" name="estado">
+                  <SelectValue placeholder="Selecciona un tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Combinable</SelectItem>
+                  <SelectItem value="false">Completa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={cargando}>
+              <Save className="h-5 w-5" aria-hidden="true" />
+              <span>{cargando ? 'Guardando…' : enEdicion ? 'Actualizar' : 'Guardar'}</span>
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </section>
+  )
 }
 
 export default CrearProducto
