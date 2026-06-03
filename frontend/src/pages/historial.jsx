@@ -8,6 +8,7 @@ import BotonPedido from '../components/boton_pedido'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { addDays } from 'date-fns'
 
 const aIso = (fecha) => (fecha ? format(fecha, 'yyyy-MM-dd') : '')
@@ -103,30 +104,34 @@ const Historial = () => {
         <CardHeader>
           <CardTitle className="text-base">Listado</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {pedidos.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No hay ventas en el rango seleccionado.
-            </p>
-          ) : (
-            pedidos.map((p) =>
-              p.numeroMesa !== 0 ? (
-                <BotonPedido
-                  key={p.id}
-                  ruta={`/ver-pedido/${p.id}/${p.numeroMesa}/resuelto`}
-                  num_mesa={p.numeroMesa}
-                  num_pedido={p.id}
-                />
+        <CardContent className="p-0">
+          <ScrollArea className="h-[60vh]">
+            <div className="flex flex-col gap-2 p-6">
+              {pedidos.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No hay ventas en el rango seleccionado.
+                </p>
               ) : (
-                <BotonPedido
-                  key={p.id}
-                  ruta={`/ver-pedido-domi/${p.id}/${p.nombreDomicilio}/resuelto`}
-                  nombreDomi={p.nombreDomicilio}
-                  num_pedido={p.id}
-                />
-              )
-            )
-          )}
+                pedidos.map((p) =>
+                  p.numeroMesa !== 0 ? (
+                    <BotonPedido
+                      key={p.id}
+                      ruta={`/ver-pedido/${p.id}/${p.numeroMesa}/resuelto`}
+                      num_mesa={p.numeroMesa}
+                      num_pedido={p.id}
+                    />
+                  ) : (
+                    <BotonPedido
+                      key={p.id}
+                      ruta={`/ver-pedido-domi/${p.id}/${p.nombreDomicilio}/resuelto`}
+                      nombreDomi={p.nombreDomicilio}
+                      num_pedido={p.id}
+                    />
+                  )
+                )
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </section>

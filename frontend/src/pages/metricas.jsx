@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, Search } from 'lucide-react'
+import { BarChart3, Loader2, Printer, Search } from 'lucide-react'
 import { Pie, PieChart } from 'recharts'
 import { toast } from 'react-toastify'
 
@@ -33,6 +33,7 @@ const Metricas = () => {
   const [rangoAplicado, setRangoAplicado] = useState({ from: inicioPorDefecto, to: hoy })
   const [pedidos, setPedidos] = useState([])
   const [cargando, setCargando] = useState(false)
+  const [imprimiendoCierre, setImprimiendoCierre] = useState(false)
 
   const traer = async (inicio, fin) => {
     try {
@@ -73,6 +74,30 @@ const Metricas = () => {
       return
     }
     setRangoAplicado(rango)
+  }
+
+  const imprimirCierre = async () => {
+    if (imprimiendoCierre) return
+    setImprimiendoCierre(true)
+    try {
+      await apiRequest('/api/impresora/cierre', {
+        metodo: 'POST',
+        body: {
+          impresoraIp:
+            import.meta.env.VITE_IMPRESORA_FACTURA || '192.168.1.100',
+        },
+      })
+      toast.success('Cierre de día impreso correctamente')
+    } catch (err) {
+      const msj = String(err?.message || err)
+      if (msj.includes('404')) {
+        toast.info('No hay pedidos resueltos hoy para imprimir')
+      } else {
+        toast.error(msj)
+      }
+    } finally {
+      setImprimiendoCierre(false)
+    }
   }
 
   const totalesPorMetodo = useMemo(() => {
@@ -228,17 +253,32 @@ const Metricas = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col items-start gap-1 border-t text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            <span className="font-medium text-foreground">{pedidos.length}</span>{' '}
-            {pedidos.length === 1 ? 'pedido traído' : 'pedidos traídos'}
-          </span>
-          <span>
-            Rango:{' '}
-            <span className="font-medium text-foreground">
-              {formatearCorto(rangoAplicado.from)} → {formatearCorto(rangoAplicado.to)}
+        <CardFooter className="flex flex-col gap-3 border-t text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+            <span>
+              <span className="font-medium text-foreground">{pedidos.length}</span>{' '}
+              {pedidos.length === 1 ? 'pedido traído' : 'pedidos traídos'}
             </span>
-          </span>
+            <span>
+              Rango:{' '}
+              <span className="font-medium text-foreground">
+                {formatearCorto(rangoAplicado.from)} → {formatearCorto(rangoAplicado.to)}
+              </span>
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            onClick={imprimirCierre}
+            disabled={imprimiendoCierre}
+            aria-busy={imprimiendoCierre}
+          >
+            {imprimiendoCierre ? (
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Printer className="h-5 w-5" aria-hidden="true" />
+            )}
+            <span>{imprimiendoCierre ? 'Imprimiendo…' : 'Imprimir cierre de día'}</span>
+          </Button>
         </CardFooter>
       </Card>
     </section>
