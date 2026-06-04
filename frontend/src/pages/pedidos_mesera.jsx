@@ -5,7 +5,7 @@ import { Plus, Receipt } from 'lucide-react'
 import { apiRequest } from '../services/api'
 import BotonPedido from '../components/boton_pedido'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 const PedidoMesera = () => {
   const navigate = useNavigate()
@@ -68,6 +68,12 @@ const PedidoMesera = () => {
             items
           )}
         </CardContent>
+        <CardFooter className="flex items-center justify-between border-t text-sm text-muted-foreground">
+          <span>
+            <span className="font-medium text-foreground">{items.length}</span>{' '}
+            {items.length === 1 ? 'pedido en mesa' : 'pedidos en mesa'}
+          </span>
+        </CardFooter>
       </Card>
     </section>
   )

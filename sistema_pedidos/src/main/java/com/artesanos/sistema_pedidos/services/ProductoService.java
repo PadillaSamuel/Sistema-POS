@@ -16,4 +16,6 @@ public interface ProductoService {
     public Optional<Producto> save(ProductoDto producto);
 
     public Optional<Producto> actualizarProducto(Integer id, ProductoDto producto);
+
+    public Optional<Producto> desactivarProducto(Integer id);
 }

@@ -196,7 +196,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
         </Button>
       </div>
 
-      <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Navegación principal" className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         <ul className="flex flex-col gap-1">
           {navegacion.map((item) => (
             <li key={item.titulo}>{renderItem(item)}</li>
@@ -250,7 +250,7 @@ const Sidebar = ({ usuario, alCerrarSesion }) => {
       <aside
         id="sidebar-panel"
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border/60 bg-card shadow-xl transition-transform duration-200 ease-in-out lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-72 transform overflow-hidden border-r border-border/60 bg-card shadow-xl transition-transform duration-200 ease-in-out lg:static lg:h-screen lg:translate-x-0',
           abierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
         aria-label="Barra lateral"

@@ -205,18 +205,6 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedido(LocalDateTime inicio, LocalDateTime fin) {
-        if (inicio == null || fin == null) {
-            throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
-        }
-        if (inicio.isAfter(fin)) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
-        }
-        return pedidoRepository.findByFechaPedidoBetweenAndEstadoPedido(inicio, fin, EstadoPedido.RESUELTO);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedidoAnulado(LocalDateTime inicio, LocalDateTime fin) {
         if (inicio == null || fin == null) {
             throw new IllegalArgumentException("Las fechas de inicio y fin no pueden ser nulas");
@@ -231,12 +219,6 @@ public class PedidoServiceImpl implements PedidoService {
     @Transactional(readOnly = true)
     public List<PedidoDto> findEstadoPedidoResuelto() {
         return pedidoRepository.findByEstadoPedido(EstadoPedido.RESUELTO);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PedidoDto> findEstadoPedidoAnulado() {
-        return pedidoRepository.findByEstadoPedido(EstadoPedido.CANCELADO);
     }
 
     public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos) {

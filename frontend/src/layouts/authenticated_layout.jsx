@@ -40,7 +40,7 @@ const AuthenticatedLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <Sidebar usuario={usuario} alCerrarSesion={cerrarSesion} />
       <main
         id="main-content"

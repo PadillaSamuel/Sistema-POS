@@ -122,4 +122,18 @@ public class ProductoController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "404", description = "No existe producto con ese id", content = @Content),
+            @ApiResponse(responseCode = "200", description = "Producto desactivado (soft delete, conserva trazabilidad)")
+    })
+    @Operation(summary = "Desactivar producto por id (soft delete, conserva trazabilidad)")
+    @PutMapping("/desactivar/{id}")
+    @PreAuthorize("hasAuthority('ROLE_CAJA')")
+    public ResponseEntity<?> desactivarProducto(@PathVariable Integer id) {
+        return productoService.desactivarProducto(id)
+                .map(p -> ResponseEntity.ok().build())
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("El producto con el ID especificado no existe."));
+    }
 }

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,9 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class ProductoServiceImpl implements ProductoService {
+    private static final Logger log = LoggerFactory.getLogger(ProductoServiceImpl.class);
+    private static final String SEPARADOR_COMBINACION = " + ";
+
     private final ProductoRepository productoRepository;
 
     public ProductoServiceImpl(ProductoRepository productoRepository) {
@@ -37,7 +42,7 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional
     @Override
     public Optional<Producto> save(ProductoDto producto) {
-        if (productoRepository.findByNombreProducto(producto.getNombreProducto().toLowerCase()).isPresent()) {
+        if (productoRepository.findByNombreProductoAndActivoTrue(producto.getNombreProducto().toLowerCase()).isPresent()) {
             return Optional.empty();
         }
         Producto nuevoProd = new Producto();
@@ -55,12 +60,14 @@ public class ProductoServiceImpl implements ProductoService {
             productoRepository.findAll().forEach(pizza -> {
                 if (pizza.getNombreProducto().startsWith("pizza") && pizza.isActivo()
                         && pizza.isCombinable()
-                        && !pizza.getNombreProducto().contains(" + ")
+                        && !pizza.getNombreProducto().contains(SEPARADOR_COMBINACION)
                         && !pizza.getId().equals(productoGuardado.getId())) {
 
                     Producto pCombinado = new Producto();
 
-                    String nombreCombinado = pizza.getNombreProducto().concat("+").concat(saborNuevo);
+                    String nombreCombinado = pizza.getNombreProducto().trim()
+                            .concat(SEPARADOR_COMBINACION)
+                            .concat(saborNuevo);
 
                     pCombinado.setNombreProducto(nombreCombinado);
                     pCombinado.setActivo(producto.isActivo());
@@ -72,6 +79,9 @@ public class ProductoServiceImpl implements ProductoService {
             });
             if (!pizzas.isEmpty()) {
                 productoRepository.saveAll(pizzas);
+            } else {
+                log.warn("Producto combinable creado (id={}, nombre='{}') sin combinaciones: no se encontraron pizzas activas+combinables previas",
+                        productoGuardado.getId(), productoGuardado.getNombreProducto());
             }
         }
         return Optional.of(productoGuardado);
@@ -86,7 +96,7 @@ public class ProductoServiceImpl implements ProductoService {
         }
 
         String nuevoNombre = productoDto.getNombreProducto().toLowerCase();
-        if (productoRepository.existsByNombreProductoAndIdNot(nuevoNombre, id)) {
+        if (productoRepository.existsByNombreProductoAndActivoTrueAndIdNot(nuevoNombre, id)) {
             throw new IllegalArgumentException("El nombre del producto ya está en uso por otro registro.");
         }
         Producto prod = productoActual.get();
@@ -96,6 +106,15 @@ public class ProductoServiceImpl implements ProductoService {
         prod.setPrecio(productoDto.getPrecioProducto());
 
         return Optional.of(productoRepository.save(prod));
+    }
+
+    @Transactional
+    @Override
+    public Optional<Producto> desactivarProducto(Integer id) {
+        return productoRepository.findById(id).map(prod -> {
+            prod.setActivo(false);
+            return productoRepository.save(prod);
+        });
     }
 
     @Transactional(readOnly = true)

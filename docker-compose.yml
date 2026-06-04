@@ -21,6 +21,7 @@ services:
   backend:
     build:
       context: ./sistema_pedidos
+      network: host
     container_name: backend-api
     restart: always
     ports:
@@ -41,6 +42,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      network: host
       args:
         - VITE_API_URL=${VITE_API_URL}
         - VITE_IMPRESORA_COCINA=${VITE_IMPRESORA_COCINA}

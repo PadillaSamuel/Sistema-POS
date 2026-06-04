@@ -130,26 +130,6 @@ public class PedidoController {
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
-            @ApiResponse(responseCode = "200", description = "Pedidos Pagados obtenidos")
-    })
-    @Operation(summary = "Buscar los pedidos Pagados para el cierre de caja")
-    @GetMapping("/resueltos/cierre/{inicio}/{fin}")
-    @PreAuthorize("hasAuthority('ROLE_CAJA')")
-    public ResponseEntity<List<PedidoDto>> getPedidosPorFecha(
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
-
-        LocalDateTime fechaInicio = inicio.atStartOfDay(); // 2026-02-13 00:00:00
-        LocalDateTime fechaFin = fin.atTime(LocalTime.MAX); // 2026-02-13 23:59:59.99999
-        List<PedidoDto> pedidos = pedidoService.findByFechaPedidoBetweenAndEstadoPedido(fechaInicio, fechaFin);
-        if (pedidos.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(pedidos);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
             @ApiResponse(responseCode = "200", description = "Pedidos con pagos obtenidos")
     })
     @Operation(summary = "Buscar pedidos resueltos con información de pagos para cierre de caja")
@@ -172,8 +152,8 @@ public class PedidoController {
             @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
             @ApiResponse(responseCode = "200", description = "Pedidos Anulados obtenidos")
     })
-    @Operation(summary = "Buscar los pedidos Anulados para el cierre de caja")
-    @GetMapping("/anulados/cierre/{inicio}/{fin}")
+    @Operation(summary = "Buscar los pedidos Anulados en un rango de fechas")
+    @GetMapping("/anulados/{inicio}/{fin}")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
     public ResponseEntity<List<PedidoDto>> getPedidosAnuladosPorFecha(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
@@ -190,28 +170,13 @@ public class PedidoController {
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "No hay pedidos pagados", content = @Content),
-            @ApiResponse(responseCode = "200", description = "Pedidos Cancelados obtenidos")
+            @ApiResponse(responseCode = "200", description = "Pedidos Resueltos obtenidos")
     })
-    @Operation(summary = "Buscar los pedidos Pagados")
+    @Operation(summary = "Buscar los pedidos Resueltos (lookup por id desde ver_pedido)")
     @GetMapping("/resueltos")
     @PreAuthorize("hasAuthority('ROLE_CAJA')")
     public ResponseEntity<List<PedidoDto>> getPedidosResueltos() {
         List<PedidoDto> pedidos = pedidoService.findEstadoPedidoResuelto();
-        if (pedidos.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(pedidos);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "No existen pedidos para esas fechas", content = @Content),
-            @ApiResponse(responseCode = "200", description = "Pedidos Cancelados obtenidos")
-    })
-    @Operation(summary = "Buscar los pedidos Anulados")
-    @GetMapping("/anulados")
-    @PreAuthorize("hasAuthority('ROLE_CAJA')")
-    public ResponseEntity<List<PedidoDto>> getPedidosAnulados() {
-        List<PedidoDto> pedidos = pedidoService.findEstadoPedidoAnulado();
         if (pedidos.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

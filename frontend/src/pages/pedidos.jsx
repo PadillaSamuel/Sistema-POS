@@ -4,7 +4,7 @@ import { ClipboardList } from 'lucide-react'
 
 import { apiRequest } from '../services/api'
 import BotonPedido from '../components/boton_pedido'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 const Pedidos = () => {
@@ -90,6 +90,12 @@ const Pedidos = () => {
             </div>
           </ScrollArea>
         </CardContent>
+        <CardFooter className="flex items-center justify-between border-t text-sm text-muted-foreground">
+          <span>
+            <span className="font-medium text-foreground">{items.length}</span>{' '}
+            {items.length === 1 ? 'pedido en curso' : 'pedidos en curso'}
+          </span>
+        </CardFooter>
       </Card>
     </section>
   )

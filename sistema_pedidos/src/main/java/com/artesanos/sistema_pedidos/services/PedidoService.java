@@ -21,13 +21,9 @@ public interface PedidoService {
 
     public Optional<Pedido> actualizarPedido(Integer id, PedidoBodyDto pedidoBodyDto);
 
-    public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedido(LocalDateTime inicio, LocalDateTime fin);
-
     public List<PedidoDto> findByFechaPedidoBetweenAndEstadoPedidoAnulado(LocalDateTime inicio, LocalDateTime fin);
 
     public List<PedidoDto> findEstadoPedidoResuelto();
-
-    public List<PedidoDto> findEstadoPedidoAnulado();
 
     public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos);
 

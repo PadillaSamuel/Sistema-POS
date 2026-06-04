@@ -15,6 +15,7 @@ const CrearProducto = () => {
   const navigate = useNavigate()
   const enEdicion = id !== undefined
   const [cargando, setCargando] = useState(false)
+  const [combinable, setCombinable] = useState('true')
 
   const enviarProducto = async (cuerpo) => {
     return apiRequest('/api/producto/crear', {
@@ -42,7 +43,7 @@ const CrearProducto = () => {
     const datos = {
       nombreProducto: form.nombrePizza.value.trim(),
       precioProducto: form.precioPizza.value.trim(),
-      combinable: form.estado.value,
+      combinable: combinable === 'true',
       activo: true,
     }
 
@@ -125,8 +126,8 @@ const CrearProducto = () => {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="estado">Tipo</Label>
-              <Select name="estado" defaultValue="true" disabled={cargando}>
-                <SelectTrigger id="estado" name="estado">
+              <Select value={combinable} onValueChange={setCombinable} disabled={cargando}>
+                <SelectTrigger id="estado">
                   <SelectValue placeholder="Selecciona un tipo" />
                 </SelectTrigger>
                 <SelectContent>

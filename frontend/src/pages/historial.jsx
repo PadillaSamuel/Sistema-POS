@@ -6,7 +6,7 @@ import { toast } from 'react-toastify'
 import { apiRequest } from '../services/api'
 import BotonPedido from '../components/boton_pedido'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -156,6 +156,12 @@ const Historial = () => {
             </div>
           </ScrollArea>
         </CardContent>
+        <CardFooter className="flex items-center justify-between border-t text-sm text-muted-foreground">
+          <span>
+            <span className="font-medium text-foreground">{pedidos.length}</span>{' '}
+            {pedidos.length === 1 ? 'venta en el rango' : 'ventas en el rango'}
+          </span>
+        </CardFooter>
       </Card>
     </section>
   )

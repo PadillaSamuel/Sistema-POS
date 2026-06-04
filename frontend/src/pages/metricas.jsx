@@ -241,9 +241,7 @@ const Metricas = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Métricas</h1>
-          <p className="text-sm text-muted-foreground">
-            Distribución de pagos por método en el rango seleccionado.
-          </p>
+          
         </div>
       </header>
 

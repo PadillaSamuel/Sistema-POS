@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Ban, Printer, Receipt } from 'lucide-react'
+import { Ban, ChefHat, ChevronDown, Printer, Receipt } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
@@ -22,6 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -46,6 +52,7 @@ const VerPedido = () => {
   const [total, setTotal] = useState(0)
   const [celular, setCelular] = useState(null)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
+  const [imprimiendo, setImprimiendo] = useState(false)
   const [pagoMetodos, setPagoMetodos] = useState({
     EFECTIVO: '',
     TRANSFERENCIA: '',
@@ -118,25 +125,53 @@ const VerPedido = () => {
     setModalPagoAbierto(true)
   }
 
+  const imprimirComanda = async (cuerpo) =>
+    apiRequest('/api/impresora/comanda', { metodo: 'POST', body: cuerpo })
+
   const imprimirFactura = async (cuerpo) =>
     apiRequest('/api/impresora/factura', { metodo: 'POST', body: cuerpo })
 
-  const impresionFac = async () => {
-    await imprimirFactura({
-      idPedido: Number(id),
-      impresoraIp: import.meta.env.VITE_IMPRESORA_FACTURA || '192.168.1.100',
-      numeroMesa: mesa !== undefined ? mesa : null,
-      nombreDomicilio: domi !== undefined ? domi : null,
-      numeroCliente: celular,
-      productos: pedido.map((p) => ({
-        nombreProducto: p.nombreProducto,
-        cantidadProducto: p.cantidadProducto,
-        subtotalPedido: p.subtotalPedido,
-        precioMomento: p.precioMomento,
-        peticionCliente: p.peticionCliente,
-      })),
-      total,
-    })
+  const productosPayload = () =>
+    pedido.map((p) => ({
+      nombreProducto: p.nombreProducto,
+      cantidadProducto: p.cantidadProducto,
+      subtotalPedido: p.subtotalPedido,
+      precioMomento: p.precioMomento,
+      peticionCliente: p.peticionCliente,
+    }))
+
+  const manejarImpresion = async (tipo) => {
+    if (imprimiendo) return
+    setImprimiendo(true)
+    try {
+      if (tipo === 'comanda') {
+        await imprimirComanda({
+          idPedido: Number(id),
+          impresoraIp:
+            import.meta.env.VITE_IMPRESORA_COCINA || '192.168.1.200',
+          numeroMesa: mesa !== undefined ? mesa : null,
+          nombreDomicilio: domi !== undefined ? domi : null,
+          productos: productosPayload(),
+        })
+        toast.success('Comanda enviada a la impresora de cocina')
+      } else {
+        await imprimirFactura({
+          idPedido: Number(id),
+          impresoraIp:
+            import.meta.env.VITE_IMPRESORA_FACTURA || '192.168.1.100',
+          numeroMesa: mesa !== undefined ? mesa : null,
+          nombreDomicilio: domi !== undefined ? domi : null,
+          numeroCliente: celular,
+          productos: productosPayload(),
+          total,
+        })
+        toast.success('Factura enviada a la impresora')
+      }
+    } catch (error) {
+      toast.error(`Error al imprimir: ${error.message}`)
+    } finally {
+      setImprimiendo(false)
+    }
   }
 
   const anularPedido = async () => {
@@ -198,10 +233,25 @@ const VerPedido = () => {
 
         <div className="flex flex-wrap justify-end gap-2">
           {esResuelto ? (
-            <Button onClick={impresionFac}>
-              <Printer className="h-5 w-5" aria-hidden="true" />
-              <span>Imprimir Comanda</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={imprimiendo}>
+                  <Printer className="h-5 w-5" aria-hidden="true" />
+                  <span>Imprimir</span>
+                  <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => manejarImpresion('comanda')}>
+                  <ChefHat className="h-4 w-4" aria-hidden="true" />
+                  <span>Comanda</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => manejarImpresion('factura')}>
+                  <Receipt className="h-4 w-4" aria-hidden="true" />
+                  <span>Factura</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <Button variant="destructive" onClick={anularPedido}>
@@ -212,10 +262,25 @@ const VerPedido = () => {
                 <Receipt className="h-5 w-5" aria-hidden="true" />
                 <span>Confirmar pago</span>
               </Button>
-              <Button variant="outline" onClick={impresionFac}>
-                <Printer className="h-5 w-5" aria-hidden="true" />
-                <span>Imprimir Comanda</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={imprimiendo}>
+                    <Printer className="h-5 w-5" aria-hidden="true" />
+                    <span>Imprimir</span>
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => manejarImpresion('comanda')}>
+                    <ChefHat className="h-4 w-4" aria-hidden="true" />
+                    <span>Comanda</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => manejarImpresion('factura')}>
+                    <Receipt className="h-4 w-4" aria-hidden="true" />
+                    <span>Factura</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
