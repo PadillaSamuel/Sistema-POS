@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -40,10 +39,10 @@ public class DetallePedido {
     String peticionCliente;
     @Column(name = "fecha_modificacion")
     LocalDateTime fechaModificacion;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "fk_n_pedido")
     Pedido pedido;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "fk_id_producto")
     Producto producto;
 
