@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Minus, MoreHorizontal, Plus } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 
-import { formateador } from '../lib/format'
+import { formateador, wrapByWords } from '../lib/format'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
@@ -41,8 +41,8 @@ const FilaTomarPedido = ({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-2 py-2 text-sm">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted font-semibold tabular-nums">
+    <div className="flex items-start gap-2 rounded-md border bg-card px-2 py-2 text-sm">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-md bg-muted font-semibold tabular-nums">
         {cnt}
       </div>
 
@@ -50,10 +50,10 @@ const FilaTomarPedido = ({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex flex-1 items-center justify-between gap-2 rounded-sm px-2 py-1 text-left text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-w-0 flex-1 items-start rounded-sm px-2 py-1 text-left text-sm font-medium leading-tight hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`${nombre_producto}, agregar detalle`}
           >
-            <span className="truncate">{nombre_producto}</span>
+            <span className="whitespace-pre-line break-words">{wrapByWords(nombre_producto)}</span>
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-72" align="start">
@@ -71,7 +71,7 @@ const FilaTomarPedido = ({
         </PopoverContent>
       </Popover>
 
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 self-center items-center gap-1">
         <Button
           type="button"
           variant="outline"
@@ -94,7 +94,7 @@ const FilaTomarPedido = ({
         </Button>
       </div>
 
-      <div className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums">
+      <div className="w-24 shrink-0 self-center text-right text-sm font-semibold tabular-nums">
         {formateador.format(subtotal)}
       </div>
     </div>

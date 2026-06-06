@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
 import { formateador } from '../lib/format'
+import { mostrarErrorImpresion } from '../lib/print-toast'
 import FilaTomarPedido from '../components/fila_tomar_pedido'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -204,8 +205,50 @@ const TomarPedido = () => {
       />
     ))
 
-  const imprimirComanda = (cuerpo) =>
-    apiRequest('/api/impresora/comanda', { metodo: 'POST', body: cuerpo })
+  const productosPlano = () =>
+    pedido.map((p) => ({
+      nombreProducto: p.nombreProducto,
+      cantidadProducto: p.cantidadProducto,
+      subtotalPedido: p.subtotalPedido,
+      precioMomento: p.precioMomento,
+      peticionCliente: p.peticionCliente,
+    }))
+
+  const cuerpoComanda = (pedidoId, productos) => ({
+    idPedido: pedidoId,
+    impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || '192.168.1.200',
+    numeroMesa: esDomicilio ? null : mesaPedido,
+    nombreDomicilio: esDomicilio ? nombreDomicilio : null,
+    productos,
+  })
+
+  async function intentarImprimirComanda(pedidoId, productosIniciales, esPedidoEditado) {
+    let productos
+    if (esPedidoEditado) {
+      productos = productosIniciales
+    } else {
+      try {
+        productos = await apiRequest(`/api/detallePedido/${pedidoId}`, { metodo: 'GET' })
+      } catch (err) {
+        mostrarErrorImpresion(
+          `No se pudo obtener el detalle del pedido para imprimir: ${err.message}`,
+          () => intentarImprimirComanda(pedidoId, productosIniciales, esPedidoEditado)
+        )
+        return
+      }
+    }
+    try {
+      await apiRequest('/api/impresora/comanda', {
+        metodo: 'POST',
+        body: cuerpoComanda(pedidoId, productos),
+      })
+    } catch (err) {
+      mostrarErrorImpresion(
+        `No se pudo imprimir la comanda: ${err.message}. Reintentá o imprimila desde Ver pedido.`,
+        () => intentarImprimirComanda(pedidoId, productosIniciales, esPedidoEditado)
+      )
+    }
+  }
 
   const confirmarPedido = async () => {
     if (mesaPedido != null) {
@@ -312,44 +355,25 @@ const TomarPedido = () => {
       return
     }
     setEnviando(true)
+    let pedidoId
     try {
       if (esEdicion) {
         await actualizarPedido()
-        await imprimirComanda({
-          idPedido: Number(id),
-          impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || '192.168.1.200',
-          numeroMesa: esDomicilio ? null : mesaPedido,
-          nombreDomicilio: esDomicilio ? nombreDomicilio : null,
-          productos: pedido.map((p) => ({
-            nombreProducto: p.nombreProducto,
-            cantidadProducto: p.cantidadProducto,
-            subtotalPedido: p.subtotalPedido,
-            precioMomento: p.precioMomento,
-            peticionCliente: p.peticionCliente,
-          })),
-        })
-        toast.success('¡Pedido actualizado con éxito!')
-        navigate(rol === 'ROLE_MESERA' ? '/mesera' : esDomicilio ? '/pedidos/true' : '/pedidos')
+        pedidoId = Number(id)
       } else {
         const res = await confirmarPedido()
-        const pedidoImprimir = await apiRequest(`/api/detallePedido/${res.id}`, {
-          metodo: 'GET',
-        })
-        await imprimirComanda({
-          idPedido: res.id,
-          impresoraIp: import.meta.env.VITE_IMPRESORA_COCINA || '192.168.1.200',
-          numeroMesa: esDomicilio ? null : mesaPedido,
-          nombreDomicilio: esDomicilio ? nombreDomicilio : null,
-          productos: pedidoImprimir,
-        })
-        toast.success('¡Pedido confirmado con éxito!')
-        navigate(rol === 'ROLE_MESERA' ? '/mesera' : esDomicilio ? '/pedidos/true' : '/pedidos')
+        pedidoId = res.id
       }
+      toast.success(esEdicion ? '¡Pedido actualizado con éxito!' : '¡Pedido confirmado con éxito!')
+      navigate(rol === 'ROLE_MESERA' ? '/mesera' : esDomicilio ? '/pedidos/true' : '/pedidos')
     } catch (error) {
       toast.error(error.message)
-    } finally {
       setEnviando(false)
+      return
     }
+    setEnviando(false)
+
+    void intentarImprimirComanda(pedidoId, productosPlano(), esEdicion)
   }
 
   const confirmarValido =

@@ -57,10 +57,8 @@ public class ProductoServiceImpl implements ProductoService {
             List<Producto> pizzas = new ArrayList<>();
             String saborNuevo = nuevoProd.getNombreProducto().replace("pizza", "").trim();
 
-            productoRepository.findAll().forEach(pizza -> {
-                if (pizza.getNombreProducto().startsWith("pizza") && pizza.isActivo()
-                        && pizza.isCombinable()
-                        && !pizza.getNombreProducto().contains(SEPARADOR_COMBINACION)
+            productoRepository.findPizzasCombinablesActivas().forEach(pizza -> {
+                if (!pizza.getNombreProducto().contains(SEPARADOR_COMBINACION)
                         && !pizza.getId().equals(productoGuardado.getId())) {
 
                     Producto pCombinado = new Producto();

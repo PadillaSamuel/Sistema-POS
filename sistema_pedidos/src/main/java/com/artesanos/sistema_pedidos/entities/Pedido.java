@@ -12,6 +12,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,7 +32,9 @@ import lombok.experimental.FieldDefaults;
 @Table(name = "pedido", indexes = {
         @jakarta.persistence.Index(name = "idx_pedido_estado", columnList = "estado"),
         @jakarta.persistence.Index(name = "idx_pedido_fecha", columnList = "fecha_pedido"),
-        @jakarta.persistence.Index(name = "idx_pedido_mesa_estado", columnList = "n_mesa, estado")
+        @jakarta.persistence.Index(name = "idx_pedido_mesa_estado", columnList = "n_mesa, estado"),
+        @jakarta.persistence.Index(name = "idx_pedido_usuario", columnList = "fk_id_usuario"),
+        @jakarta.persistence.Index(name = "idx_pedido_fecha_estado", columnList = "fecha_pedido, estado")
 })
 public class Pedido {
     @Id
@@ -49,19 +52,19 @@ public class Pedido {
     EstadoPedido estadoPedido;
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_pago")
-    EstadoPago estadoPago;  
+    EstadoPago estadoPago;
     @Column(name = "nombreDomicilio")
     String nombreDomicilio;
     @Column(name = "numero_cliente", columnDefinition = "VARCHAR(300)")
     String numeroCliente;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_usuario")
     Usuario usuario;
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     List<DetallePedido> detallesPedido;
 
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     List<Pago> pagos = new ArrayList<>();
 
     public Pedido() {
@@ -81,45 +84,15 @@ public class Pedido {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((fechaPedido == null) ? 0 : fechaPedido.hashCode());
-        result = prime * result + ((totalPedido == null) ? 0 : totalPedido.hashCode());
-        result = prime * result + ((numeroMesa == null) ? 0 : numeroMesa.hashCode());
-        return result;
+        return getClass().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
         Pedido other = (Pedido) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        if (fechaPedido == null) {
-            if (other.fechaPedido != null)
-                return false;
-        } else if (!fechaPedido.equals(other.fechaPedido))
-            return false;
-        if (totalPedido == null) {
-            if (other.totalPedido != null)
-                return false;
-        } else if (!totalPedido.equals(other.totalPedido))
-            return false;
-        if (numeroMesa == null) {
-            if (other.numeroMesa != null)
-                return false;
-        } else if (!numeroMesa.equals(other.numeroMesa))
-            return false;
-        return true;
+        return id != null && id.equals(other.id);
     }
 
 }

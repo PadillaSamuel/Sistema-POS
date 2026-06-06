@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
 import { formateador } from '../lib/format'
+import { mostrarErrorImpresion } from '../lib/print-toast'
 import FilaPedido from '../components/fila_pedido'
 import { Button } from '@/components/ui/button'
 import {
@@ -168,7 +169,11 @@ const VerPedido = () => {
         toast.success('Factura enviada a la impresora')
       }
     } catch (error) {
-      toast.error(`Error al imprimir: ${error.message}`)
+      const etiqueta = tipo === 'comanda' ? 'la comanda' : 'la factura'
+      mostrarErrorImpresion(
+        `No se pudo imprimir ${etiqueta}: ${error.message}. Verificá que la impresora esté encendida.`,
+        () => manejarImpresion(tipo)
+      )
     } finally {
       setImprimiendo(false)
     }

@@ -12,7 +12,9 @@ import lombok.experimental.FieldDefaults;
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "pago")
+@Table(name = "pago", indexes = {
+        @jakarta.persistence.Index(name = "idx_pago_pedido", columnList = "fk_id_pedido")
+})
 public class Pago {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

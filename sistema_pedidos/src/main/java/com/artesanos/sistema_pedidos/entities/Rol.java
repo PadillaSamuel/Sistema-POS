@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,7 +16,9 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "rol")
+@Table(name = "rol", indexes = {
+        @Index(name = "idx_rol_nombre", columnList = "nombre_rol", unique = true)
+})
 public class Rol {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

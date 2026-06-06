@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 
 import { apiRequest } from '../services/api'
 import { formateador } from '../lib/format'
+import { mostrarErrorImpresion } from '../lib/print-toast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -129,7 +130,10 @@ const Metricas = () => {
       if (msj.includes('404')) {
         toast.info('No hay pedidos resueltos hoy para imprimir')
       } else {
-        toast.error(msj)
+        mostrarErrorImpresion(
+          `No se pudo imprimir el cierre de día: ${msj}`,
+          () => imprimirCierre()
+        )
       }
     } finally {
       setImprimiendoCierre(false)
