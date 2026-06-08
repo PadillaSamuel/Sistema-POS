@@ -220,7 +220,8 @@ public class PedidoServiceImpl implements PedidoService {
     public List<PedidoDto> findEstadoPedidoResuelto() {
         return pedidoRepository.findByEstadoPedido(EstadoPedido.RESUELTO);
     }
-
+    @Override
+    @Transactional()
     public Optional<Pedido> procesarPagos(Integer idPedido, List<PagoDto> pagosRecibidos) {
         return pedidoRepository.findById(idPedido).map(pedido -> {
 
