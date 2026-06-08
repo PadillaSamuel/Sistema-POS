@@ -2,7 +2,6 @@ package com.artesanos.sistema_pedidos.services;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,8 +69,7 @@ public class PedidoServiceImpl implements PedidoService {
         List<DetallePedido> detallePedidos = new ArrayList<>();
 
         Integer total = 0;
-        LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"))
-                .truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"));
         for (ProductoDetalleDto i : pedidoDto.getProductos()) {
 
             DetallePedido detallePedido = new DetallePedido();
@@ -137,8 +135,7 @@ public class PedidoServiceImpl implements PedidoService {
                 return pedidoRepository.save(pedido);
             }
 
-            LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"))
-                    .truncatedTo(ChronoUnit.MINUTES);
+            LocalDateTime fechaActual = LocalDateTime.now(ZoneId.of("America/Bogota"));
 
             List<ProductoDetalleDto> dtosEntrantes = new ArrayList<>(pedidoBodyDto.getProductos());
 
@@ -168,6 +165,7 @@ public class PedidoServiceImpl implements PedidoService {
                         detalleExistente.setPeticionCliente(dto.getPeticionCliente());
                         detalleExistente.setSubtotalPedido(nuevoSubtotal);
                         detalleExistente.setFechaModificacion(fechaActual);
+                        detalleExistente.setModificado(true);
                     }
 
                     totalAcumulado += nuevoSubtotal;
@@ -193,6 +191,7 @@ public class PedidoServiceImpl implements PedidoService {
                 nuevoDetalle.setSubtotalPedido(subtotal);
                 nuevoDetalle.setPeticionCliente(dtoNuevo.getPeticionCliente());
                 nuevoDetalle.setFechaModificacion(fechaActual);
+                nuevoDetalle.setModificado(true);
 
                 totalAcumulado += subtotal;
                 pedido.getDetallesPedido().add(nuevoDetalle);

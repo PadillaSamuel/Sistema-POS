@@ -14,13 +14,16 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, In
             select new com.artesanos.sistema_pedidos.dtos.ProductoDetalleDto(
             dt.producto.nombreProducto,
             dt.cantidadProducto,
-            dt.precioMomento, 
+            dt.precioMomento,
             dt.subtotalPedido,
             dt.peticionCliente ,
-            dt.fechaModificacion
+            dt.fechaModificacion,
+            dt.modificado
             )
             from DetallePedido dt
             where dt.pedido.id=?1
         """)
     public List<ProductoDetalleDto> findProductosDePedido(Integer id);
+
+    List<DetallePedido> findByPedidoIdAndModificadoTrue(Integer pedidoId);
 }

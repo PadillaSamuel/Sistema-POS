@@ -39,6 +39,8 @@ public class DetallePedido {
     String peticionCliente;
     @Column(name = "fecha_modificacion")
     LocalDateTime fechaModificacion;
+    @Column(name = "modificado", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    boolean modificado;
     @ManyToOne
     @JoinColumn(name = "fk_n_pedido")
     Pedido pedido;

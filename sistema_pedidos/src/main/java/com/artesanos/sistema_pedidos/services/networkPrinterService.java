@@ -2,9 +2,11 @@
 package com.artesanos.sistema_pedidos.services;
 
 import com.artesanos.sistema_pedidos.dtos.ProductoDetalleDto;
+import com.artesanos.sistema_pedidos.entities.DetallePedido;
 import com.artesanos.sistema_pedidos.entities.Pedido;
 import com.artesanos.sistema_pedidos.enums.EstadoPedido;
 import com.artesanos.sistema_pedidos.enums.MetodoPago;
+import com.artesanos.sistema_pedidos.repositories.DetallePedidoRepository;
 import com.artesanos.sistema_pedidos.repositories.PedidoRepository;
 import com.github.anastaciocintra.escpos.EscPos;
 import com.github.anastaciocintra.escpos.EscPosConst;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -30,11 +33,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 @Service
 public class networkPrinterService {
@@ -42,6 +43,7 @@ public class networkPrinterService {
     private static final Logger log = LoggerFactory.getLogger(networkPrinterService.class);
     private final ResourceLoader resourceLoader;
     private final PedidoRepository pedidoRepository;
+    private final DetallePedidoRepository detallePedidoRepository;
 
     private static final int PRINTER_CHAR_WIDTH = 48;
     private final Style boldCenter = new Style().setBold(true).setFontSize(Style.FontSize._1, Style.FontSize._1)
@@ -51,9 +53,11 @@ public class networkPrinterService {
             .setJustification(EscPosConst.Justification.Center);
     private final Style normal = new Style().setFontSize(Style.FontSize._1, Style.FontSize._1);
 
-    public networkPrinterService(ResourceLoader resourceLoader, PedidoRepository pedidoRepository) {
+    public networkPrinterService(ResourceLoader resourceLoader, PedidoRepository pedidoRepository,
+            DetallePedidoRepository detallePedidoRepository) {
         this.resourceLoader = resourceLoader;
         this.pedidoRepository = pedidoRepository;
+        this.detallePedidoRepository = detallePedidoRepository;
     }
 
     public void imprimirFactura(Map<String, Object> data, String ipImpresora) throws IOException {
@@ -112,7 +116,7 @@ public class networkPrinterService {
         log.info("[IMPRIMIR_COCINA] Iniciando trabajo - IP: {}, PedidoID: {}", ipImpresora, data.get("id"));
         try (TcpIpOutputStream outputStream = new TcpIpOutputStream(ipImpresora, 9100);
             EscPos escpos = new EscPos(outputStream)) {
-        
+
         Style normalCocinaStyle = new Style().setFontSize(Style.FontSize._1, Style.FontSize._2);
         Style resaltadoStyle = new Style()
                 .setFontSize(Style.FontSize._1, Style.FontSize._2)
@@ -127,8 +131,8 @@ public class networkPrinterService {
             imprimirDoble = productos.stream().anyMatch(prod -> {
                 if (prod.getNombreProducto() == null) return false;
                 String nombreLower = prod.getNombreProducto().toLowerCase();
-                return !nombreLower.startsWith("pizza") 
-                    && !nombreLower.startsWith("lasaña") 
+                return !nombreLower.startsWith("pizza")
+                    && !nombreLower.startsWith("lasaña")
                     && !nombreLower.startsWith("adicion");
             });
         }
@@ -136,7 +140,7 @@ public class networkPrinterService {
         int repeticiones = imprimirDoble ? 2 : 1;
 
         for (int i = 0; i < repeticiones; i++) {
-            
+
             if (i == 1) {
                 escpos.writeLF(new Style().setBold(true), "*** COPIA ***");
             }
@@ -152,28 +156,14 @@ public class networkPrinterService {
 
             if (productos != null && !productos.isEmpty()) {
 
-                LocalDateTime fechaMayor = productos.stream()
-                        .map(ProductoDetalleDto::getFechaModificacion)
-                        .filter(Objects::nonNull)
-                        .max(Comparator.naturalOrder())
-                        .orElse(null);
-
-                LocalDateTime fechaMenor = productos.stream()
-                        .map(ProductoDetalleDto::getFechaModificacion)
-                        .filter(Objects::nonNull)
-                        .min(Comparator.naturalOrder())
-                        .orElse(null);
-
-                boolean debeResaltar = fechaMayor != null && fechaMenor != null && !fechaMayor.equals(fechaMenor);
-
                 for (ProductoDetalleDto prod : productos) {
                     String cant = prod.getCantidadProducto() != null ? String.valueOf(prod.getCantidadProducto()) : "1";
-                    
+
                     String nombre = prod.getNombreProducto() != null ? prod.getNombreProducto() : "Producto";
                     if (nombre.toLowerCase().startsWith("pizza ")) {
-                        nombre = nombre.substring(6).trim(); 
+                        nombre = nombre.substring(6).trim();
                     } else if (nombre.toLowerCase().equals("pizza")) {
-                        nombre = ""; 
+                        nombre = "";
                     }
 
                     String peticion = (prod.getPeticionCliente() != null && !prod.getPeticionCliente().isBlank())
@@ -183,9 +173,7 @@ public class networkPrinterService {
                     List<String> lineasProducto = format3ColumnsMultiLineKitchen(cant, nombre, peticion,
                             PRINTER_CHAR_WIDTH);
 
-                    boolean esModificado = debeResaltar
-                            && prod.getFechaModificacion() != null
-                            && prod.getFechaModificacion().equals(fechaMayor);
+                    boolean esModificado = prod.isModificado();
 
                     Style estiloAUsar = esModificado ? resaltadoStyle : normalCocinaStyle;
 
@@ -199,7 +187,7 @@ public class networkPrinterService {
                 }
             }
             escpos.writeLF("------------------------------------------------");
-            
+
             if (i == 0 && repeticiones == 2) {
                 finalizarTicket(escpos, "Fin comanda (1/2)");
             } else {
@@ -213,6 +201,15 @@ public class networkPrinterService {
         throw new IOException("Fallo en la impresión: " + e.getMessage(), e);
     }
 }
+
+    @Transactional
+    public void resetFlagsModificado(Integer idPedido) {
+        List<DetallePedido> detalles = detallePedidoRepository.findByPedidoIdAndModificadoTrue(idPedido);
+        for (DetallePedido d : detalles) {
+            d.setModificado(false);
+            detallePedidoRepository.save(d);
+        }
+    }
 
     public void imprimirCierreDelDia(String ipImpresora) throws IOException {
     log.info("[IMPRIMIR_CIERRE] Iniciando trabajo de cierre - IP: {}", ipImpresora);

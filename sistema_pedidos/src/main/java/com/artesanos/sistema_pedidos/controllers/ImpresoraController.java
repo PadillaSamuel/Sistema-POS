@@ -104,6 +104,7 @@ public class ImpresoraController {
 
             data.put("pedido", detallePedidoService.getDetallesPedido(payload.getIdPedido()));
             networkPrinterService.imprimirCocina(data, printerIp);
+            networkPrinterService.resetFlagsModificado(payload.getIdPedido());
 
             return ResponseEntity.ok("Impresión enviada exitosamente a: " + printerIp);
 
