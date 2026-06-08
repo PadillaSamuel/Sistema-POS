@@ -22,7 +22,7 @@ const Pedidos = () => {
     const intervalo = setInterval(async () => {
       const tmp = await listarPedidos()
       setPedido(tmp)
-    }, 10000)
+    }, 5000)
     return () => clearInterval(intervalo)
   }, [])
 
